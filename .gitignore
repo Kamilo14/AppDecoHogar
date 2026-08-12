@@ -44,8 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Private Documentation and Agents
+# Private Documentation, Agents and Editor config
 /documentación/
 /.agents/
+/.cursor/
 .env
 *.secret

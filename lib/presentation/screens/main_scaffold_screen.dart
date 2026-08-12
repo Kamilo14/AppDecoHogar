@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 import 'home_dashboard_screen.dart';
 import '../../features/clientes/presentation/screens/clientes_list_screen.dart';
 import '../../features/encargos/presentation/screens/encargos_list_screen.dart';
@@ -25,10 +26,8 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFFC1512F);
-    const indicatorColor = Color(0xFFFDF2F0);
-
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -36,14 +35,18 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, -4))
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
+            )
           ],
         ),
         child: NavigationBar(
           height: 72,
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface,
           elevation: 0,
-          indicatorColor: indicatorColor,
+          indicatorColor: AppColors.primary.withOpacity(0.1),
           selectedIndex: _currentIndex,
           onDestinationSelected: (index) {
             setState(() => _currentIndex = index);
@@ -51,28 +54,28 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           destinations: const [
             NavigationDestination(
-              icon: Icon(Icons.home_outlined, color: Color(0xFF8A7863)),
-              selectedIcon: Icon(Icons.home_rounded, color: primaryColor),
+              icon: Icon(Icons.home_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
               label: 'Inicio',
             ),
             NavigationDestination(
-              icon: Icon(Icons.people_outline_rounded, color: Color(0xFF8A7863)),
-              selectedIcon: Icon(Icons.people_rounded, color: primaryColor),
+              icon: Icon(Icons.people_outline_rounded, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.people_rounded, color: AppColors.primary),
               label: 'Clientes',
             ),
             NavigationDestination(
-              icon: Icon(Icons.assignment_outlined, color: Color(0xFF8A7863)),
-              selectedIcon: Icon(Icons.assignment_rounded, color: primaryColor),
+              icon: Icon(Icons.assignment_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.assignment_rounded, color: AppColors.primary),
               label: 'Encargos',
             ),
             NavigationDestination(
-              icon: Icon(Icons.bar_chart_outlined, color: Color(0xFF8A7863)),
-              selectedIcon: Icon(Icons.bar_chart_rounded, color: primaryColor),
+              icon: Icon(Icons.bar_chart_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.bar_chart_rounded, color: AppColors.primary),
               label: 'Reportes',
             ),
             NavigationDestination(
-              icon: Icon(Icons.more_horiz_outlined, color: Color(0xFF8A7863)),
-              selectedIcon: Icon(Icons.more_horiz_rounded, color: primaryColor),
+              icon: Icon(Icons.more_horiz_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.more_horiz_rounded, color: AppColors.primary),
               label: 'Más',
             ),
           ],
