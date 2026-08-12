@@ -157,15 +157,8 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
       return;
     }
 
-    if (_estado != 'PENDIENTE') {
-      final tieneTemporales = validInputs.any((d) => d.productoId == null);
-      if (tieneTemporales) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Para pasar a COMPRADO, todos los productos deben estar vinculados (usa el botón +)')),
-        );
-        return;
-      }
-    }
+    // Santiago Flow: Ya no bloqueamos si hay temporales en estados distintos a PENDIENTE.
+    // El DataSource se encargará de crearlos.
 
     setState(() => _isLoading = true);
 
@@ -300,7 +293,6 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
             ..._detalles.asMap().entries.map((entry) {
               final idx = entry.key;
               final input = entry.value;
-              final bool esTemporal = input.productoId == null;
 
               return WarmSurfaceCard(
                 padding: const EdgeInsets.all(16),
@@ -344,9 +336,9 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                                     ? IconButton(
                                         icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
                                         onPressed: () => _crearProductoRapido(input),
-                                        tooltip: 'Convertir a producto real',
+                                        tooltip: 'Convertir a producto real ahora',
                                       )
-                                    : (esTemporal && _estado != 'PENDIENTE' ? const Icon(Icons.warning_amber_rounded, color: Colors.orange) : null),
+                                    : null, // Santiago Flow: Quitamos icono de advertencia, ahora es transparente el flujo
                                 ),
                                 onChanged: (v) {
                                   input.searchCtrl.text = v;
@@ -359,7 +351,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                                 },
                                 validator: (v) {
                                   if (v == null || v.isEmpty) return 'Escribe el nombre';
-                                  if (_estado != 'PENDIENTE' && input.productoId == null) return '¡Vincula un producto!';
+                                  // Santiago Flow: No exigimos vinculación manual aquí
                                   return null;
                                 },
                               );

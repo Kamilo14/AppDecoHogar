@@ -19,16 +19,18 @@ class ConfirmarCompraUseCase {
       throw ValidationFailure('Todos los productos deben tener precio de compra y venta fijados.');
     }
 
-    // 1. Actualizar cada producto en el catálogo (Suma stock y vincula viaje)
+    // 1. Actualizar cada producto en el catálogo (Santiago Flow: Solo precios y viaje)
     for (final detalle in detallesConPrecio) {
-      final producto = await _productoRepository.getProductoById(detalle.productoId);
-      if (producto != null) {
-        await _productoRepository.saveProducto(producto.copyWith(
-          precioCompra: detalle.costoUnitario,
-          precioVenta: detalle.precioUnitario,
-          cantidadDisponible: producto.cantidadDisponible + detalle.cantidad,
-          viajeId: viajeId,
-        ));
+      if (detalle.productoId != null) {
+        final producto = await _productoRepository.getProductoById(detalle.productoId!);
+        if (producto != null) {
+          await _productoRepository.saveProducto(producto.copyWith(
+            precioCompra: detalle.costoUnitario,
+            precioVenta: detalle.precioUnitario,
+            // El stock ya fue reservado en saveEncargo, aquí no se toca
+            viajeId: viajeId,
+          ));
+        }
       }
     }
 
