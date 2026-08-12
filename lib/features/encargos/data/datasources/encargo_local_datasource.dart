@@ -30,10 +30,13 @@ class EncargoLocalDataSource {
       String? estadoAnterior;
       int correlativo = 1;
 
+      // 1. Obtener estado anterior y detalles previos si es una edición
+      List<db.EncargoDetalleData> detallesAnteriores = [];
       if (encargo.id != null) {
         final actual = await (_db.select(_db.encargos)..where((e) => e.id.equals(encargo.id!))).getSingleOrNull();
         estadoAnterior = actual?.estado;
         correlativo = actual?.correlativoCliente ?? 1;
+        detallesAnteriores = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargo.id!))).get();
       } 
       else if (encargo.clienteId != null) {
         final query = _db.select(_db.encargos)
@@ -44,14 +47,15 @@ class EncargoLocalDataSource {
         correlativo = (ultimo?.correlativoCliente ?? 0) + 1;
       }
 
-      if (encargo.estado == 'ENTREGADO' && estadoAnterior != 'ENTREGADO') {
-        for (final detalle in encargo.detalles) {
-          if (detalle.productoId != null) {
-            await _validarStockDisponible(detalle.productoId!, detalle.cantidad);
-          }
+      // 2. Santiago Flow: Revertir "Reservas" de stock anteriores si es edición 
+      // para recalcular con los nuevos datos
+      for (final da in detallesAnteriores) {
+        if (da.productoId != null) {
+          await _ajustarStock(da.productoId!, -da.cantidad);
         }
       }
 
+      // 3. Preparar y Guardar Encargo
       final companion = db.EncargosCompanion(
         id: encargo.id == null ? const Value.absent() : Value(encargo.id!),
         clienteId: Value(encargo.clienteId),
@@ -73,15 +77,39 @@ class EncargoLocalDataSource {
         encargoId = await _db.into(_db.encargos).insert(companion);
       }
 
+      // 4. Procesar Detalles y Auto-creación de Productos
       for (final detalle in encargo.detalles) {
-        // Corrección definitiva de Variable: El tipo genérico T debe ser Object. 
-        // Drift maneja el valor nulo internamente si pasamos el tipo base.
+        int? finalProductoId = detalle.productoId;
+
+        // Santiago Flow: Auto-creación si no existe el ID
+        if (finalProductoId == null && detalle.nombreTemporal != null && detalle.nombreTemporal!.trim().isNotEmpty) {
+          final nombreNorm = detalle.nombreTemporal!.trim();
+          
+          // Verificar si ya existe un producto con ese nombre para no duplicar
+          final existente = await (_db.select(_db.productos)..where((p) => p.nombre.equals(nombreNorm))..limit(1)).getSingleOrNull();
+          
+          if (existente != null) {
+            finalProductoId = existente.id;
+          } else {
+            finalProductoId = await _db.into(_db.productos).insert(db.ProductosCompanion.insert(
+              nombre: nombreNorm,
+              cantidadDisponible: const Value(0), // Se incrementará en el paso de reserva a continuación
+              activo: const Value(true),
+            ));
+          }
+        }
+
+        // Reserva de Stock: Incrementamos el stock del producto con la nueva cantidad pedida
+        if (finalProductoId != null) {
+          await _ajustarStock(finalProductoId, detalle.cantidad);
+        }
+
         await _db.customInsert(
           'INSERT INTO encargo_detalle (encargo_id, producto_id, nombre_temporal, cantidad, precio_unitario, costo_unitario) VALUES (?, ?, ?, ?, ?, ?)',
           variables: [
             Variable<int>(encargoId),
-            Variable<int>(detalle.productoId), // detalle.productoId es int?, Variable<int> lo acepta
-            Variable<String>(detalle.nombreTemporal), // detalle.nombreTemporal es String?, Variable<String> lo acepta
+            Variable<int>(finalProductoId),
+            Variable<String>(detalle.productoId == null ? null : detalle.nombreTemporal),
             Variable<int>(detalle.cantidad),
             Variable<int>(detalle.precioUnitario),
             Variable<int>(detalle.costoUnitario),
@@ -89,25 +117,28 @@ class EncargoLocalDataSource {
         );
       }
 
+      // 5. Lógica de Descuento por Entrega (Solo si pasa a ENTREGADO ahora)
       if (encargo.estado == 'ENTREGADO' && estadoAnterior != 'ENTREGADO') {
-        for (final detalle in encargo.detalles) {
-          if (detalle.productoId != null) {
-            await _descontarStock(detalle.productoId!, detalle.cantidad);
+        final detallesActuales = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargoId))).get();
+        for (final d in detallesActuales) {
+          if (d.productoId != null) {
+            await _descontarStockReal(d.productoId!, d.cantidad);
           }
         }
       }
     });
   }
 
-  Future<void> _validarStockDisponible(int productoId, int cantidad) async {
+  Future<void> _ajustarStock(int productoId, int delta) async {
     final prod = await (_db.select(_db.productos)..where((p) => p.id.equals(productoId))).getSingleOrNull();
-    if (prod == null) return; 
-    if (prod.precioCompra != null && prod.cantidadDisponible < cantidad) {
-      throw ValidationFailure('Stock insuficiente');
+    if (prod != null) {
+      await (_db.update(_db.productos)..where((p) => p.id.equals(productoId))).write(
+        db.ProductosCompanion(cantidadDisponible: Value(prod.cantidadDisponible + delta)),
+      );
     }
   }
 
-  Future<void> _descontarStock(int productoId, int cantidad) async {
+  Future<void> _descontarStockReal(int productoId, int cantidad) async {
     final prod = await (_db.select(_db.productos)..where((p) => p.id.equals(productoId))).getSingleOrNull();
     if (prod != null) {
       final nuevaCantidad = prod.cantidadDisponible - cantidad;
@@ -126,8 +157,7 @@ class EncargoLocalDataSource {
         final detalles = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargoId))).get();
         for (final d in detalles) {
           if (d.productoId != null) {
-            await _validarStockDisponible(d.productoId!, d.cantidad);
-            await _descontarStock(d.productoId!, d.cantidad);
+            await _descontarStockReal(d.productoId!, d.cantidad);
           }
         }
       }
