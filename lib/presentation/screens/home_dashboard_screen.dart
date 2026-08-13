@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../features/clientes/presentation/providers/cliente_providers.dart';
 import '../../features/encargos/presentation/providers/encargo_providers.dart';
@@ -15,19 +16,6 @@ import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/catalogo/presentation/screens/catalogo_screen.dart';
 import '../../features/productos/presentation/screens/productos_list_screen.dart';
 import '../../features/gastos/presentation/screens/viajes_list_screen.dart';
-
-// PALETA OBLIGATORIA
-abstract class DashboardTheme {
-  static const Color background = Color(0xFFFAF8F5); // Crema
-  static const Color surface = Color(0xFFFFFCF9);    // Blanco
-  static const Color olive = Color(0xFF748363);      // Verde Oliva
-  static const Color terracota = Color(0xFFC86442); // Terracota
-  static const Color beige = Color(0xFFC9A77D);      // Beige
-  static const Color textPrimary = Color(0xFF2A2724);
-  static const Color textSecondary = Color(0xFF8E867C);
-  static const Color border = Color(0xFFF0EAE4);
-  static const Color iconBg = Color(0xFFF3EAE0);
-}
 
 final dashboardStatsProvider = Provider((ref) {
   final clientesAsync = ref.watch(clientesStreamProvider);
@@ -88,7 +76,7 @@ class HomeDashboardScreen extends ConsumerWidget {
     final usuarioAsync = ref.watch(usuarioProfileProvider);
 
     return Scaffold(
-      backgroundColor: DashboardTheme.background,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Stack(
           children: [
@@ -99,7 +87,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.sort_rounded, size: 30, color: DashboardTheme.textPrimary),
+                    const Icon(Icons.sort_rounded, size: 30, color: AppColors.textPrimary),
                     _NotificationBadge(),
                   ],
                 ),
@@ -113,8 +101,8 @@ class HomeDashboardScreen extends ConsumerWidget {
                       Row(
                         children: [
                           Text(
-                            '¡Hola, ${u?.primerNombre ?? "Camilo"}!',
-                            style: GoogleFonts.outfit(fontSize: 30, fontWeight: FontWeight.w800, color: DashboardTheme.textPrimary, letterSpacing: -0.8),
+                            '¡Hola, ${u?.primerNombre ?? ""}!',
+                            style: GoogleFonts.outfit(fontSize: 30, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.8),
                           ),
                           const SizedBox(width: 8),
                           const Text('👋', style: TextStyle(fontSize: 24)),
@@ -122,7 +110,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                       ),
                       Text(
                         'Resumen de tu negocio',
-                        style: GoogleFonts.outfit(fontSize: 15, color: DashboardTheme.textSecondary, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.outfit(fontSize: 15, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -151,7 +139,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // 5. ACCESOS RÁPIDOS (Cuadrados con texto dentro)
+                // 5. ACCESOS RÁPIDOS
                 const _SectionHeader(title: 'Accesos rápidos'),
                 const SizedBox(height: 16),
                 GridView.count(
@@ -160,16 +148,16 @@ class HomeDashboardScreen extends ConsumerWidget {
                   physics: const NeverScrollableScrollPhysics(),
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.85, // Ajustado para que el cuadrado sea casi perfecto y quepa el texto
+                  childAspectRatio: 0.85,
                   children: [
-                    _QuickAccess(icon: Icons.assignment_add, label: 'Nuevo encargo', color: DashboardTheme.terracota, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EncargoFormScreen()))),
-                    _QuickAccess(icon: Icons.flash_on_rounded, label: 'Venta directa', color: DashboardTheme.terracota, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EncargoFormScreen(esVentaDirecta: true)))),
-                    _QuickAccess(icon: Icons.account_balance_wallet_rounded, label: 'Registrar pago', color: DashboardTheme.olive, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PagosListScreen()))),
-                    _QuickAccess(icon: Icons.storefront_rounded, label: 'Catálogo', color: DashboardTheme.terracota, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CatalogoScreen()))),
-                    _QuickAccess(icon: Icons.people_alt_rounded, label: 'Clientes', color: DashboardTheme.olive, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientesListScreen()))),
-                    _QuickAccess(icon: Icons.inventory_2_rounded, label: 'Productos', color: DashboardTheme.olive, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductosListScreen()))),
-                    _QuickAccess(icon: Icons.local_shipping_rounded, label: 'Gastos viaje', color: DashboardTheme.beige, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ViajesListScreen()))),
-                    _QuickAccess(icon: Icons.bar_chart_rounded, label: 'Reportes', color: DashboardTheme.olive, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportesScreen()))),
+                    _QuickAccess(icon: Icons.assignment_add, label: 'Nuevo encargo', color: AppColors.primary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EncargoFormScreen()))),
+                    _QuickAccess(icon: Icons.flash_on_rounded, label: 'Venta directa', color: AppColors.primary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EncargoFormScreen(esVentaDirecta: true)))),
+                    _QuickAccess(icon: Icons.account_balance_wallet_rounded, label: 'Registrar pago', color: AppColors.secondary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PagosListScreen()))),
+                    _QuickAccess(icon: Icons.storefront_rounded, label: 'Catálogo', color: AppColors.primary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CatalogoScreen()))),
+                    _QuickAccess(icon: Icons.people_alt_rounded, label: 'Clientes', color: AppColors.secondary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientesListScreen()))),
+                    _QuickAccess(icon: Icons.inventory_2_rounded, label: 'Productos', color: AppColors.secondary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProductosListScreen()))),
+                    _QuickAccess(icon: Icons.local_shipping_rounded, label: 'Gastos viaje', color: AppColors.tertiary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ViajesListScreen()))),
+                    _QuickAccess(icon: Icons.bar_chart_rounded, label: 'Reportes', color: AppColors.secondary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportesScreen()))),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -177,9 +165,9 @@ class HomeDashboardScreen extends ConsumerWidget {
                 // 6. RECORDATORIOS
                 const _SectionHeader(title: 'Recordatorios'),
                 const SizedBox(height: 16),
-                _ReminderTile(icon: Icons.access_time_filled_rounded, title: '${stats['clientes']} pagos vencidos', subtitle: 'Clientes con deuda', color: DashboardTheme.terracota, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientesListScreen()))),
+                _ReminderTile(icon: Icons.access_time_filled_rounded, title: '${stats['clientes']} pagos vencidos', subtitle: 'Clientes con deuda', color: AppColors.primary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClientesListScreen()))),
                 const SizedBox(height: 12),
-                _ReminderTile(icon: Icons.shopping_bag_rounded, title: '${stats['entregas']} entregas hoy', subtitle: 'Encargos por entregar', color: DashboardTheme.beige, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportesScreen()))),
+                _ReminderTile(icon: Icons.shopping_bag_rounded, title: '${stats['entregas']} entregas hoy', subtitle: 'Encargos por entregar', color: AppColors.tertiary, onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReportesScreen()))),
                 const SizedBox(height: 120),
               ],
             ),
@@ -188,7 +176,7 @@ class HomeDashboardScreen extends ConsumerWidget {
               right: 24,
               bottom: 24,
               child: FloatingActionButton(
-                backgroundColor: DashboardTheme.olive,
+                backgroundColor: AppColors.secondary,
                 foregroundColor: Colors.white,
                 elevation: 4,
                 shape: const CircleBorder(),
@@ -211,9 +199,9 @@ class _NotificationBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         shape: BoxShape.circle,
-        border: Border.all(color: DashboardTheme.border.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
       ),
-      child: const Icon(Icons.notifications_none_rounded, size: 24, color: DashboardTheme.textPrimary),
+      child: const Icon(Icons.notifications_none_rounded, size: 24, color: AppColors.textPrimary),
     );
   }
 }
@@ -228,10 +216,10 @@ class _HeroGananciaCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: DashboardTheme.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, 10))],
-        border: Border.all(color: DashboardTheme.border.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.outline.withValues(alpha: 0.3)),
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -239,9 +227,9 @@ class _HeroGananciaCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Ganancia este mes', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: DashboardTheme.textSecondary)),
+              Text('Ganancia este mes', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
               const SizedBox(height: 8),
-              Text(formatCurrencyClp(ganancia), style: GoogleFonts.outfit(fontSize: 34, fontWeight: FontWeight.w900, color: DashboardTheme.textPrimary)),
+              Text(formatCurrencyClp(ganancia), style: GoogleFonts.outfit(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
             ],
           ),
           Positioned(
@@ -249,13 +237,13 @@ class _HeroGananciaCard extends StatelessWidget {
             bottom: 0,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: const Color(0xFFE8EEDC), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: AppColors.secondary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.trending_up_rounded, size: 14, color: DashboardTheme.olive),
+                  const Icon(Icons.trending_up_rounded, size: 14, color: AppColors.secondary),
                   const SizedBox(width: 4),
-                  Text('+12.5%', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: DashboardTheme.olive)),
+                  Text('+12.5%', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.secondary)),
                 ],
               ),
             ),
@@ -263,7 +251,7 @@ class _HeroGananciaCard extends StatelessWidget {
           Positioned(
             right: -10,
             top: -15,
-            child: Icon(Icons.eco_rounded, size: 70, color: DashboardTheme.olive.withValues(alpha: 0.06)),
+            child: Icon(Icons.eco_rounded, size: 70, color: AppColors.secondary.withValues(alpha: 0.06)),
           )
         ],
       ),
@@ -280,8 +268,8 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: DashboardTheme.textPrimary)),
-        Text('Ver todo', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700, color: DashboardTheme.olive)),
+        Text(title, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+        Text('Ver todo', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.secondary)),
       ],
     );
   }
@@ -298,16 +286,16 @@ class _StatItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 4),
       decoration: BoxDecoration(
-        color: DashboardTheme.surface, 
+        color: AppColors.surface, 
         borderRadius: BorderRadius.circular(20), 
-        border: Border.all(color: DashboardTheme.border.withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(value, textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: isPrice ? 12 : 20, fontWeight: FontWeight.w900, color: DashboardTheme.textPrimary)),
+          Text(value, textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: isPrice ? 12 : 20, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
           const SizedBox(height: 6),
-          Text(label, textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.w600, color: DashboardTheme.textSecondary, height: 1.1)),
+          Text(label, textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textSecondary, height: 1.1)),
         ],
       ),
     );
@@ -329,10 +317,10 @@ class _QuickAccess extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         decoration: BoxDecoration(
-          color: DashboardTheme.surface,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: DashboardTheme.border.withValues(alpha: 0.6)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
+          border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -357,7 +345,7 @@ class _QuickAccess extends StatelessWidget {
                 style: GoogleFonts.outfit(
                   fontSize: 10, 
                   fontWeight: FontWeight.w700, 
-                  color: DashboardTheme.textPrimary, 
+                  color: AppColors.textPrimary, 
                   height: 1.0
                 )
               ),
@@ -382,22 +370,20 @@ class _ReminderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: DashboardTheme.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: DashboardTheme.border.withValues(alpha: 0.4)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.015), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-          child: Icon(icon, color: color, size: 22),
+          child: Icon(icon, color: color, size: 20),
         ),
-        title: Text(title, style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: DashboardTheme.textPrimary)),
-        subtitle: Text(subtitle, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500, color: DashboardTheme.textSecondary)),
-        trailing: const Icon(Icons.chevron_right_rounded, color: DashboardTheme.textSecondary, size: 20),
+        title: Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary)),
+        subtitle: Text(subtitle, style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textSecondary)),
+        trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
       ),
     );
   }

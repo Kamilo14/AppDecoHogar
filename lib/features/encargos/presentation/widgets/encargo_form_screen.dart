@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../core/widgets/warm_ui.dart';
 import '../../../clientes/domain/entities/cliente_entity.dart';
 import '../../../clientes/presentation/providers/cliente_providers.dart';
 import '../../../productos/domain/entities/producto_entity.dart';
@@ -11,8 +13,6 @@ import '../../../productos/presentation/widgets/producto_form_dialog.dart';
 import '../../domain/entities/encargo_detalle_entity.dart';
 import '../../domain/entities/encargo_entity.dart';
 import '../providers/encargo_providers.dart';
-import '../../../../core/widgets/warm_ui.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class EncargoFormScreen extends ConsumerStatefulWidget {
   final Encargo? encargoExistente;
@@ -52,6 +52,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
   int? _clienteId;
   String _estado = 'PENDIENTE';
   bool _isLoading = false;
+  bool _pagoInmediato = true; 
   late final List<_DetalleInput> _detalles;
 
   @override
@@ -92,9 +93,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
     item.costoCtrl.addListener(_onFieldChanged);
   }
 
-  void _onFieldChanged() {
-    setState(() {}); // Actualiza los totales en tiempo real
-  }
+  void _onFieldChanged() => setState(() {});
 
   @override
   void dispose() {
@@ -146,19 +145,16 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     
     if (_clienteId == null && !widget.esVentaDirecta) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor, selecciona un cliente')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona un cliente')));
       return;
     }
 
     final validInputs = _detalles.where((d) => d.productoId != null || d.searchCtrl.text.isNotEmpty).toList();
 
     if (validInputs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes agregar al menos un producto')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Añade al menos un producto')));
       return;
     }
-
-    // Santiago Flow: Ya no bloqueamos si hay temporales en estados distintos a PENDIENTE.
-    // El DataSource se encargará de crearlos.
 
     setState(() => _isLoading = true);
 
@@ -198,9 +194,8 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
   Widget build(BuildContext context) {
     final clientes = ref.watch(clientesStreamProvider).asData?.value ?? [];
     final productos = ref.watch(productosStreamProvider).asData?.value ?? [];
-    final String titulo = widget.esVentaDirecta ? 'Nueva Venta Directa' : (widget.encargoExistente == null ? 'Nuevo Encargo' : 'Editar Encargo');
+    final String titulo = widget.esVentaDirecta ? 'Venta Directa' : (widget.encargoExistente == null ? 'Nuevo Encargo' : 'Editar Encargo');
 
-    // Cálculos de totales en vivo
     int totalVenta = 0;
     int totalCosto = 0;
     for (final item in _detalles) {
@@ -219,6 +214,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        foregroundColor: AppColors.textPrimary,
       ),
       body: Form(
         key: _formKey,
@@ -229,13 +225,13 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
               value: _clienteId,
               isExpanded: true,
               decoration: InputDecoration(
-                labelText: widget.esVentaDirecta ? 'Cliente (Opcional)' : 'Cliente', 
-                prefixIcon: const Icon(Icons.person_outline),
+                labelText: widget.esVentaDirecta ? 'Cliente (Opcional)' : 'Cliente *', 
+                prefixIcon: const Icon(Icons.person_outline_rounded),
                 filled: true,
                 fillColor: AppColors.surface,
               ),
               items: [
-                if (widget.esVentaDirecta) const DropdownMenuItem(value: null, child: Text('Sin cliente (Venta rápida)')),
+                if (widget.esVentaDirecta) const DropdownMenuItem(value: null, child: Text('Venta sin cliente registrado')),
                 ...clientes.map((c) => DropdownMenuItem(value: c.id, child: Text(c.nombre))),
               ],
               onChanged: (widget.clienteId != null && widget.encargoExistente != null) ? null : (v) => setState(() => _clienteId = v),
@@ -243,21 +239,42 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
             ),
             const SizedBox(height: 16),
             
-            if (!widget.esVentaDirecta) ...[
+            if (widget.esVentaDirecta) ...[
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16)),
+                child: Row(
+                  children: [
+                    _PagoOption(
+                      label: 'Pago total ahora',
+                      isSelected: _pagoInmediato,
+                      onTap: () => setState(() => _pagoInmediato = true),
+                      color: AppColors.primary,
+                    ),
+                    _PagoOption(
+                      label: 'Va abonando',
+                      isSelected: !_pagoInmediato,
+                      onTap: () => setState(() => _pagoInmediato = false),
+                      color: AppColors.secondary,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ] else ...[
               DropdownButtonFormField<String>(
                 value: _estado,
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Estado del pedido',
-                  prefixIcon: Icon(Icons.info_outline),
+                  prefixIcon: Icon(Icons.info_outline_rounded),
                   filled: true,
                   fillColor: AppColors.surface,
                 ),
                 items: const [
-                  DropdownMenuItem(value: 'PENDIENTE', child: Text('PENDIENTE (Solo registro)')),
-                  DropdownMenuItem(value: 'COMPRADO', child: Text('COMPRADO (Ya se adquirió)')),
-                  DropdownMenuItem(value: 'ENTREGADO', child: Text('ENTREGADO (Al cliente)')),
-                  DropdownMenuItem(value: 'FINALIZADO', child: Text('FINALIZADO (Pagado)')),
+                  DropdownMenuItem(value: 'PENDIENTE', child: Text('Pendiente (A traer)')),
+                  DropdownMenuItem(value: 'COMPRADO', child: Text('Comprado (Ya en stock)')),
+                  DropdownMenuItem(value: 'ENTREGADO', child: Text('Entregado al cliente')),
                 ],
                 onChanged: (v) => setState(() => _estado = v!),
               ),
@@ -267,8 +284,8 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
             TextFormField(
               controller: _observacionesCtrl,
               decoration: const InputDecoration(
-                labelText: 'Notas / Observaciones', 
-                prefixIcon: Icon(Icons.notes),
+                labelText: 'Notas', 
+                prefixIcon: Icon(Icons.notes_rounded),
                 filled: true,
                 fillColor: AppColors.surface,
               ),
@@ -282,7 +299,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                 Text('Productos', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
                 TextButton.icon(
                   onPressed: _agregarDetalle, 
-                  icon: const Icon(Icons.add_circle_outline), 
+                  icon: const Icon(Icons.add_circle_outline_rounded), 
                   label: const Text('Añadir Item'),
                   style: TextButton.styleFrom(foregroundColor: AppColors.primary),
                 ),
@@ -294,21 +311,24 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
               final idx = entry.key;
               final input = entry.value;
 
-              return WarmSurfaceCard(
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.outline.withOpacity(0.5)),
+                ),
                 child: Column(
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           flex: 3,
                           child: Autocomplete<Producto>(
                             optionsBuilder: (textValue) {
                               if (textValue.text.isEmpty) return const Iterable<Producto>.empty();
-                              return productos.where((p) => 
-                                p.activo && p.nombre.toLowerCase().contains(textValue.text.toLowerCase())
-                              );
+                              return productos.where((p) => p.activo && p.nombre.toLowerCase().contains(textValue.text.toLowerCase()));
                             },
                             displayStringForOption: (p) => p.nombre,
                             onSelected: (p) {
@@ -316,44 +336,25 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                                 input.productoId = p.id;
                                 input.nombreTemporal = null;
                                 input.searchCtrl.text = p.nombre;
-                                if (_estado != 'PENDIENTE') {
-                                  input.costoCtrl.text = p.precioCompra?.toString() ?? input.costoCtrl.text;
-                                  input.precioCtrl.text = p.precioVenta?.toString() ?? input.precioCtrl.text;
-                                }
+                                input.precioCtrl.text = p.precioVenta?.toString() ?? '';
+                                input.costoCtrl.text = p.precioCompra?.toString() ?? '';
                               });
                             },
                             fieldViewBuilder: (ctx, ctrl, node, onSubmitted) {
-                              if (ctrl.text.isEmpty && input.searchCtrl.text.isNotEmpty) {
-                                ctrl.text = input.searchCtrl.text;
-                              }
+                              if (ctrl.text.isEmpty && input.searchCtrl.text.isNotEmpty) ctrl.text = input.searchCtrl.text;
                               return TextFormField(
                                 controller: ctrl,
                                 focusNode: node,
                                 decoration: InputDecoration(
-                                  labelText: _estado == 'PENDIENTE' ? '¿Qué necesita el cliente?' : 'Seleccionar Producto',
-                                  hintText: 'Ej: Frutilla',
+                                  labelText: 'Producto',
+                                  filled: true,
+                                  fillColor: AppColors.background,
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                                   suffixIcon: (ctrl.text.isNotEmpty && !productos.any((p) => p.nombre.toLowerCase() == ctrl.text.toLowerCase()))
-                                    ? IconButton(
-                                        icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-                                        onPressed: () => _crearProductoRapido(input),
-                                        tooltip: 'Convertir a producto real ahora',
-                                      )
-                                    : null, // Santiago Flow: Quitamos icono de advertencia, ahora es transparente el flujo
+                                    ? IconButton(icon: const Icon(Icons.add_circle_rounded, color: AppColors.primary), onPressed: () => _crearProductoRapido(input))
+                                    : null,
                                 ),
-                                onChanged: (v) {
-                                  input.searchCtrl.text = v;
-                                  if (input.productoId != null) {
-                                    final p = productos.where((prod) => prod.id == input.productoId).firstOrNull;
-                                    if (p != null && p.nombre.toLowerCase() != v.toLowerCase()) {
-                                      input.productoId = null;
-                                    }
-                                  }
-                                },
-                                validator: (v) {
-                                  if (v == null || v.isEmpty) return 'Escribe el nombre';
-                                  // Santiago Flow: No exigimos vinculación manual aquí
-                                  return null;
-                                },
+                                onChanged: (v) => input.searchCtrl.text = v,
                               );
                             },
                           ),
@@ -363,108 +364,105 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                           flex: 1,
                           child: TextFormField(
                             controller: input.cantidadCtrl,
-                            decoration: const InputDecoration(labelText: 'Cant.'),
+                            decoration: const InputDecoration(labelText: 'Cant.', filled: true, fillColor: AppColors.background),
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
-                            validator: (v) => (int.tryParse(v ?? '') ?? 0) <= 0 ? 'Error' : null,
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => _eliminarDetalle(idx),
-                          icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                        ),
+                        IconButton(icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error), onPressed: () => _eliminarDetalle(idx)),
                       ],
                     ),
-                    if (_estado != 'PENDIENTE') ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        if (!widget.esVentaDirecta) ...[
                           Expanded(
                             child: TextFormField(
                               controller: input.costoCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Costo Unit.', 
-                                prefixText: r'$ ',
-                                hintText: '0',
-                              ),
+                              decoration: const InputDecoration(labelText: 'Costo Unit.', prefixText: r'$ ', filled: true, fillColor: AppColors.background),
                               keyboardType: TextInputType.number,
-                              validator: (v) => (_estado != 'PENDIENTE' && (v == null || v.isEmpty)) ? 'Requerido' : null,
                             ),
                           ),
                           const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: input.precioCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Precio Venta', 
-                                prefixText: r'$ ',
-                                hintText: '0',
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (v) => (_estado != 'PENDIENTE' && (v == null || v.isEmpty)) ? 'Requerido' : null,
-                            ),
-                          ),
                         ],
-                      ),
-                    ],
+                        Expanded(
+                          child: TextFormField(
+                            controller: input.precioCtrl,
+                            decoration: const InputDecoration(labelText: 'Precio Venta', prefixText: r'$ ', filled: true, fillColor: AppColors.background),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               );
             }),
             
-            // Resumen de Totales en Vivo
-            if (_estado != 'PENDIENTE') ...[
-              const SizedBox(height: 24),
-              WarmSurfaceCard(
-                color: AppColors.primary.withOpacity(0.05),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Total Venta:', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                        Text(formatCurrencyClp(totalVenta), style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
-                      ],
-                    ),
-                    const Divider(height: 20),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total Cobro:', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: AppColors.textSecondary, fontSize: 16)),
+                      Text(formatCurrencyClp(totalVenta), style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 22, color: AppColors.textPrimary)),
+                    ],
+                  ),
+                  if (!widget.esVentaDirecta) ...[
+                    const Divider(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Ganancia Estimada:', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                        Text(
-                          formatCurrencyClp(ganancia), 
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w800, 
-                            fontSize: 18, 
-                            color: ganancia >= 0 ? AppColors.secondary : AppColors.error
-                          )
-                        ),
+                        Text(formatCurrencyClp(ganancia), style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: ganancia >= 0 ? AppColors.secondary : AppColors.error)),
                       ],
                     ),
                   ],
-                ),
+                ],
               ),
-            ],
+            ),
 
             const SizedBox(height: 32),
             FilledButton(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
+              style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 60), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
               onPressed: _isLoading ? null : _guardar,
               child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white) 
-                  : Text(
-                      widget.esVentaDirecta 
-                        ? 'REGISTRAR VENTA' 
-                        : (_estado == 'PENDIENTE' ? 'GUARDAR RECORDATORIO' : 'GUARDAR Y FIJAR PRECIOS'),
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16),
-                    ),
+                ? const CircularProgressIndicator(color: Colors.white) 
+                : Text(widget.esVentaDirecta ? 'FINALIZAR VENTA' : 'GUARDAR', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16)),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PagoOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color color;
+
+  const _PagoOption({required this.label, required this.isSelected, required this.onTap, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? color : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(label, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: isSelected ? Colors.white : AppColors.textSecondary)),
+          ),
         ),
       ),
     );

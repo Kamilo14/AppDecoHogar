@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../features/backup/presentation/screens/backup_screen.dart';
 import '../../features/catalogo/presentation/screens/catalogo_screen.dart';
 import '../../features/gastos/presentation/screens/viajes_list_screen.dart';
@@ -10,27 +11,13 @@ import '../../features/productos/presentation/screens/productos_list_screen.dart
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/encargos/presentation/widgets/encargo_form_screen.dart';
 
-// Paleta de Colores Obligatoria
-abstract class HubTheme {
-  static const Color background = Color(0xFFF6F2EB); // Crema
-  static const Color surface = Color(0xFFFFFFFF);    // Blanco
-  static const Color olive = Color(0xFF6F7F58);      // Verde Oliva
-  static const Color terracota = Color(0xFFC95A32); // Terracota
-  static const Color beige = Color(0xFFC9A77D);      // Beige Tostado
-  
-  static const Color textPrimary = Color(0xFF2E2A26);
-  static const Color textSecondary = Color(0xFF8C847B);
-  static const Color border = Color(0xFFE8E0D6);
-  static const Color iconBg = Color(0xFFF3EAE0);
-}
-
 class GestionHubScreen extends ConsumerWidget {
   const GestionHubScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: HubTheme.background,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -41,7 +28,7 @@ class GestionHubScreen extends ConsumerWidget {
               style: GoogleFonts.outfit(
                 fontSize: 32,
                 fontWeight: FontWeight.w800,
-                color: HubTheme.textPrimary,
+                color: AppColors.textPrimary,
                 letterSpacing: -0.5,
               ),
             ),
@@ -50,7 +37,7 @@ class GestionHubScreen extends ConsumerWidget {
               'Gestión avanzada, finanzas y sistema.',
               style: GoogleFonts.outfit(
                 fontSize: 16,
-                color: HubTheme.textSecondary,
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -62,7 +49,7 @@ class GestionHubScreen extends ConsumerWidget {
               title: 'Venta Directa', 
               subtitle: 'Registro rápido sin encargo',
               icon: Icons.bolt_rounded, 
-              iconColor: HubTheme.terracota,
+              iconColor: AppColors.primary,
               onTap: () => _open(context, const EncargoFormScreen(esVentaDirecta: true)),
             ),
             const SizedBox(height: 16),
@@ -70,7 +57,7 @@ class GestionHubScreen extends ConsumerWidget {
               title: 'Catálogo', 
               subtitle: 'Generar PDF para clientes',
               icon: Icons.storefront_rounded, 
-              iconColor: HubTheme.beige,
+              iconColor: AppColors.tertiary,
               onTap: () => _open(context, const CatalogoScreen()),
             ),
             const SizedBox(height: 16),
@@ -78,7 +65,7 @@ class GestionHubScreen extends ConsumerWidget {
               title: 'Productos', 
               subtitle: 'Gestión de inventario y stock',
               icon: Icons.inventory_2_rounded, 
-              iconColor: HubTheme.terracota,
+              iconColor: AppColors.primary,
               onTap: () => _open(context, const ProductosListScreen()),
             ),
             
@@ -89,7 +76,7 @@ class GestionHubScreen extends ConsumerWidget {
               title: 'Pagos Recibidos', 
               subtitle: 'Historial de abonos y saldos',
               icon: Icons.account_balance_wallet_rounded, 
-              iconColor: HubTheme.olive,
+              iconColor: AppColors.secondary,
               onTap: () => _open(context, const PagosListScreen()),
             ),
             const SizedBox(height: 16),
@@ -97,7 +84,7 @@ class GestionHubScreen extends ConsumerWidget {
               title: 'Viajes y Logística', 
               subtitle: 'Gastos y compras en Santiago',
               icon: Icons.local_shipping_rounded, 
-              iconColor: HubTheme.beige,
+              iconColor: AppColors.tertiary,
               onTap: () => _open(context, const ViajesListScreen()),
             ),
             
@@ -108,7 +95,7 @@ class GestionHubScreen extends ConsumerWidget {
               title: 'Copia de Seguridad', 
               subtitle: 'Exportar e importar datos (JSON)',
               icon: Icons.cloud_upload_rounded, 
-              iconColor: HubTheme.olive,
+              iconColor: AppColors.secondary,
               onTap: () => _open(context, const BackupScreen()),
             ),
             const SizedBox(height: 16),
@@ -116,7 +103,7 @@ class GestionHubScreen extends ConsumerWidget {
               title: 'Cerrar sesión', 
               subtitle: 'Salir de la cuenta actual',
               icon: Icons.logout_rounded, 
-              iconColor: HubTheme.terracota,
+              iconColor: AppColors.primary,
               onTap: () {
                 ref.read(authStateProvider.notifier).state = AuthState.unauthenticated;
               },
@@ -147,7 +134,7 @@ class _SectionLabel extends StatelessWidget {
       style: GoogleFonts.outfit(
         fontSize: 18, 
         fontWeight: FontWeight.w800, 
-        color: HubTheme.olive
+        color: AppColors.secondary
       )
     );
   }
@@ -172,12 +159,12 @@ class _ModuleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: HubTheme.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: HubTheme.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.015),
+            color: Colors.black.withValues(alpha: 0.015),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -196,8 +183,8 @@ class _ModuleTile extends StatelessWidget {
                 Container(
                   width: 48,
                   height: 48,
-                  decoration: const BoxDecoration(
-                    color: HubTheme.iconBg,
+                  decoration: BoxDecoration(
+                    color: AppColors.muted.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: iconColor, size: 24),
@@ -212,7 +199,7 @@ class _ModuleTile extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: HubTheme.textPrimary,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -221,7 +208,7 @@ class _ModuleTile extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.w500,
                           fontSize: 13,
-                          color: HubTheme.textSecondary,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -229,7 +216,7 @@ class _ModuleTile extends StatelessWidget {
                 ),
                 Icon(
                   Icons.chevron_right_rounded, 
-                  color: HubTheme.textSecondary.withOpacity(0.3), 
+                  color: AppColors.textSecondary.withValues(alpha: 0.3), 
                   size: 20
                 ),
               ],
