@@ -8,9 +8,9 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: const ColorScheme(
         brightness: Brightness.light,
-        primary: AppColors.primary,
+        primary: AppColors.primary, // Verde Oliva
         onPrimary: Colors.white,
-        secondary: AppColors.secondary,
+        secondary: AppColors.secondary, // Terracota
         onSecondary: Colors.white,
         error: AppColors.error,
         onError: Colors.white,
@@ -27,7 +27,7 @@ class AppTheme {
         titleMedium: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
         titleSmall: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
         bodyLarge: GoogleFonts.outfit(color: AppColors.textPrimary),
-        bodyMedium: GoogleFonts.outfit(color: AppColors.textPrimary.withValues(alpha: 0.85)),
+        bodyMedium: GoogleFonts.outfit(color: AppColors.textPrimary.withOpacity(0.85)),
         bodySmall: GoogleFonts.outfit(color: AppColors.textSecondary),
         labelLarge: GoogleFonts.outfit(fontWeight: FontWeight.w700),
       ),
@@ -46,14 +46,20 @@ class AppTheme {
       ),
 
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.surface.withValues(alpha: 0.95),
-        indicatorColor: AppColors.muted,
-        labelTextStyle: WidgetStatePropertyAll(
-          GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 12, color: AppColors.textPrimary),
-        ),
-        iconTheme: const WidgetStatePropertyAll(
-          IconThemeData(color: AppColors.textPrimary, size: 24),
-        ),
+        backgroundColor: AppColors.surface.withOpacity(0.95),
+        indicatorColor: AppColors.primary.withOpacity(0.1),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primary);
+          }
+          return GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.textSecondary);
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: AppColors.primary, size: 26);
+          }
+          return const IconThemeData(color: AppColors.textSecondary, size: 24);
+        }),
       ),
 
       cardTheme: CardThemeData(
@@ -70,26 +76,17 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
-          backgroundColor: AppColors.primary,
+          backgroundColor: AppColors.primary, // Verde Oliva
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16),
-        ),
-      ),
-
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
-          foregroundColor: AppColors.textPrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          side: const BorderSide(color: AppColors.outline, width: 1.5),
-          textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16),
+          elevation: 0,
         ),
       ),
 
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        elevation: 3,
-        backgroundColor: AppColors.primary,
+        elevation: 4,
+        backgroundColor: AppColors.primary, // Verde Oliva
         foregroundColor: Colors.white,
         shape: CircleBorder(),
       ),
@@ -114,12 +111,12 @@ class AppTheme {
       ),
 
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.muted,
-        selectedColor: AppColors.secondary,
-        labelStyle: GoogleFonts.outfit(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
-        secondaryLabelStyle: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w700),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-        side: BorderSide.none,
+        backgroundColor: AppColors.surface,
+        selectedColor: AppColors.primary.withOpacity(0.1),
+        labelStyle: GoogleFonts.outfit(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+        secondaryLabelStyle: GoogleFonts.outfit(color: AppColors.primary, fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        side: const BorderSide(color: AppColors.outline),
       ),
     );
   }

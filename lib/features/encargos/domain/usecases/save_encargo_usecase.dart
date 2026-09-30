@@ -7,7 +7,7 @@ class SaveEncargoUseCase {
 
   SaveEncargoUseCase(this._repository);
 
-  Future<void> call(Encargo encargo) async {
+  Future<int> call(Encargo encargo, {int? montoPagoInicial, String? metodoPago}) async {
     if (encargo.detalles.isEmpty) {
       throw ValidationFailure('El encargo debe tener al menos un producto.');
     }
@@ -16,7 +16,6 @@ class SaveEncargoUseCase {
       if (detalle.cantidad <= 0) {
         throw ValidationFailure('La cantidad debe ser mayor a 0.');
       }
-      // Regla 8.3: El precio unitario puede ser null en estado PENDIENTE
       if (detalle.precioUnitario != null && detalle.precioUnitario! < 0) {
         throw ValidationFailure('El precio no puede ser negativo.');
       }
@@ -26,6 +25,6 @@ class SaveEncargoUseCase {
       throw ValidationFailure('Debes seleccionar un cliente para un encargo.');
     }
 
-    await _repository.saveEncargo(encargo);
+    return await _repository.saveEncargo(encargo, montoPagoInicial: montoPagoInicial, metodoPago: metodoPago);
   }
 }

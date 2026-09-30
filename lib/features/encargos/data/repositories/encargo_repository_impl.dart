@@ -12,9 +12,13 @@ class EncargoRepositoryImpl implements EncargoRepository {
   Stream<List<Encargo>> watchEncargos() => _dataSource.watchEncargos();
 
   @override
-  Future<void> saveEncargo(Encargo encargo) async {
+  Future<int> saveEncargo(Encargo encargo, {int? montoPagoInicial, String? metodoPago}) async {
     try {
-      await _dataSource.saveEncargo(encargo);
+      return await _dataSource.saveEncargo(
+        encargo, 
+        montoPagoInicial: montoPagoInicial, 
+        metodoPago: metodoPago,
+      );
     } catch (e) {
       throw DatabaseFailure('Error al guardar el encargo: $e');
     }

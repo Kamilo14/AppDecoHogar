@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import '../../../../core/database/database.dart' as db;
-import '../../../../core/errors/failures.dart';
 import '../../domain/entities/encargo_detalle_entity.dart' as domain;
 import '../../domain/entities/encargo_entity.dart' as domain;
 
@@ -25,38 +24,46 @@ class EncargoLocalDataSource {
         });
   }
 
-  Future<void> saveEncargo(domain.Encargo encargo) async {
-    await _db.transaction(() async {
+  /// Guarda un encargo y opcionalmente registra un pago inicial en la misma transacción
+  Future<int> saveEncargo(domain.Encargo encargo, {int? montoPagoInicial, String? metodoPago}) async {
+    return await _db.transaction(() async {
       String? estadoAnterior;
       int correlativo = 1;
 
-      // 1. Obtener estado anterior y detalles previos si es una edición
-      List<db.EncargoDetalleData> detallesAnteriores = [];
       if (encargo.id != null) {
         final actual = await (_db.select(_db.encargos)..where((e) => e.id.equals(encargo.id!))).getSingleOrNull();
         estadoAnterior = actual?.estado;
         correlativo = actual?.correlativoCliente ?? 1;
-        detallesAnteriores = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargo.id!))).get();
+        
+        // Revertir stock si ya estaba entregado para validar contra el stock "limpio"
+        if (estadoAnterior == 'ENTREGADO') {
+          final detallesPrevios = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargo.id!))).get();
+          for (final d in detallesPrevios) {
+            if (d.productoId != null) await _ajustarStock(d.productoId!, d.cantidad);
+          }
+        }
       } 
       else if (encargo.clienteId != null) {
-        final query = _db.select(_db.encargos)
+        final ultimo = await (_db.select(_db.encargos)
           ..where((e) => e.clienteId.equals(encargo.clienteId!))
           ..orderBy([(e) => OrderingTerm.desc(e.correlativoCliente)])
-          ..limit(1);
-        final ultimo = await query.getSingleOrNull();
+          ..limit(1)).getSingleOrNull();
         correlativo = (ultimo?.correlativoCliente ?? 0) + 1;
       }
 
-      // 2. Santiago Flow: Revertir "Reservas" de stock anteriores si es edición 
-      // para recalcular con los nuevos datos
-      for (final da in detallesAnteriores) {
-        if (da.productoId != null) {
-          await _ajustarStock(da.productoId!, -da.cantidad);
+      // VALIDACIÓN DE STOCK ANTES DE PROCESAR
+      if (encargo.estado == 'ENTREGADO') {
+        for (final detalle in encargo.detalles) {
+          if (detalle.productoId != null) {
+            final prod = await (_db.select(_db.productos)..where((p) => p.id.equals(detalle.productoId!))).getSingleOrNull();
+            if (prod != null && prod.cantidadDisponible < detalle.cantidad) {
+              throw Exception('Stock insuficiente para "${prod.nombre}". Disponible: ${prod.cantidadDisponible}, Solicitado: ${detalle.cantidad}');
+            }
+          }
         }
       }
 
-      // 3. Preparar y Guardar Encargo
-      final companion = db.EncargosCompanion(
+      final encargoId = await _db.into(_db.encargos).insertVariant(db.EncargosCompanion(
         id: encargo.id == null ? const Value.absent() : Value(encargo.id!),
         clienteId: Value(encargo.clienteId),
         correlativoCliente: Value(correlativo),
@@ -66,66 +73,48 @@ class EncargoLocalDataSource {
         observaciones: Value(encargo.observaciones),
         tipoVenta: Value(encargo.tipoVenta),
         activo: Value(encargo.activo),
-      );
+      ));
 
-      int encargoId;
       if (encargo.id != null) {
-        encargoId = encargo.id!;
-        await (_db.update(_db.encargos)..where((e) => e.id.equals(encargoId))).write(companion);
         await (_db.delete(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargoId))).go();
-      } else {
-        encargoId = await _db.into(_db.encargos).insert(companion);
       }
 
-      // 4. Procesar Detalles y Auto-creación de Productos
       for (final detalle in encargo.detalles) {
-        int? finalProductoId = detalle.productoId;
-
-        // Santiago Flow: Auto-creación si no existe el ID
-        if (finalProductoId == null && detalle.nombreTemporal != null && detalle.nombreTemporal!.trim().isNotEmpty) {
-          final nombreNorm = detalle.nombreTemporal!.trim();
-          
-          // Verificar si ya existe un producto con ese nombre para no duplicar
-          final existente = await (_db.select(_db.productos)..where((p) => p.nombre.equals(nombreNorm))..limit(1)).getSingleOrNull();
-          
-          if (existente != null) {
-            finalProductoId = existente.id;
-          } else {
-            finalProductoId = await _db.into(_db.productos).insert(db.ProductosCompanion.insert(
-              nombre: nombreNorm,
-              cantidadDisponible: const Value(0), // Se incrementará en el paso de reserva a continuación
-              activo: const Value(true),
-            ));
-          }
+        int? pId = detalle.productoId;
+        if (pId == null && detalle.nombreTemporal != null && detalle.nombreTemporal!.isNotEmpty) {
+          final exist = await (_db.select(_db.productos)..where((p) => p.nombre.equals(detalle.nombreTemporal!))..limit(1)).getSingleOrNull();
+          pId = exist?.id ?? await _db.into(_db.productos).insert(db.ProductosCompanion.insert(nombre: detalle.nombreTemporal!, cantidadDisponible: const Value(0)));
         }
 
-        // Reserva de Stock: Incrementamos el stock del producto con la nueva cantidad pedida
-        if (finalProductoId != null) {
-          await _ajustarStock(finalProductoId, detalle.cantidad);
-        }
+        await _db.into(_db.encargoDetalle).insert(db.EncargoDetalleCompanion.insert(
+          encargoId: encargoId,
+          productoId: Value(pId),
+          nombreTemporal: Value(detalle.nombreTemporal),
+          cantidad: detalle.cantidad,
+          precioUnitario: Value(detalle.precioUnitario),
+          costoUnitario: Value(detalle.costoUnitario),
+        ));
 
-        await _db.customInsert(
-          'INSERT INTO encargo_detalle (encargo_id, producto_id, nombre_temporal, cantidad, precio_unitario, costo_unitario) VALUES (?, ?, ?, ?, ?, ?)',
-          variables: [
-            Variable<int>(encargoId),
-            Variable<int>(finalProductoId),
-            Variable<String>(detalle.productoId == null ? null : detalle.nombreTemporal),
-            Variable<int>(detalle.cantidad),
-            Variable<int>(detalle.precioUnitario),
-            Variable<int>(detalle.costoUnitario),
-          ],
-        );
-      }
-
-      // 5. Lógica de Descuento por Entrega (Solo si pasa a ENTREGADO ahora)
-      if (encargo.estado == 'ENTREGADO' && estadoAnterior != 'ENTREGADO') {
-        final detallesActuales = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargoId))).get();
-        for (final d in detallesActuales) {
-          if (d.productoId != null) {
-            await _descontarStockReal(d.productoId!, d.cantidad);
-          }
+        // Descontar stock si se entrega ahora
+        if (encargo.estado == 'ENTREGADO' && pId != null) {
+          await _ajustarStock(pId, -detalle.cantidad);
         }
       }
+
+      // REGISTRO DE PAGO ATÓMICO
+      if (montoPagoInicial != null && montoPagoInicial > 0 && encargo.clienteId != null) {
+        await _db.into(_db.pagos).insert(db.PagosCompanion.insert(
+          clienteId: encargo.clienteId!,
+          encargoId: Value(encargoId),
+          monto: montoPagoInicial,
+          fecha: DateTime.now(),
+          metodo: metodoPago ?? 'Efectivo',
+          tipo: 'PAGO_TOTAL',
+          concepto: Value('Pago automático venta #${encargoId}'),
+        ));
+      }
+
+      return encargoId;
     });
   }
 
@@ -133,49 +122,48 @@ class EncargoLocalDataSource {
     final prod = await (_db.select(_db.productos)..where((p) => p.id.equals(productoId))).getSingleOrNull();
     if (prod != null) {
       await (_db.update(_db.productos)..where((p) => p.id.equals(productoId))).write(
-        db.ProductosCompanion(cantidadDisponible: Value(prod.cantidadDisponible + delta)),
-      );
-    }
-  }
-
-  Future<void> _descontarStockReal(int productoId, int cantidad) async {
-    final prod = await (_db.select(_db.productos)..where((p) => p.id.equals(productoId))).getSingleOrNull();
-    if (prod != null) {
-      final nuevaCantidad = prod.cantidadDisponible - cantidad;
-      await (_db.update(_db.productos)..where((p) => p.id.equals(productoId))).write(
-        db.ProductosCompanion(cantidadDisponible: Value(nuevaCantidad < 0 ? 0 : nuevaCantidad)),
+        db.ProductosCompanion(cantidadDisponible: Value((prod.cantidadDisponible + delta).clamp(0, 999999))),
       );
     }
   }
 
   Future<void> changeEstadoEncargo(int encargoId, String nuevoEstado) async {
     await _db.transaction(() async {
-      final encargoRow = await (_db.select(_db.encargos)..where((e) => e.id.equals(encargoId))).getSingleOrNull();
-      if (encargoRow == null) return;
-
-      if (nuevoEstado == 'ENTREGADO' && encargoRow.estado != 'ENTREGADO') {
-        final detalles = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargoId))).get();
+      final actual = await (_db.select(_db.encargos)..where((e) => e.id.equals(encargoId))).getSingleOrNull();
+      if (actual == null || actual.estado == nuevoEstado) return;
+      final detalles = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargoId))).get();
+      
+      if (nuevoEstado == 'ENTREGADO') {
+        // VALIDACIÓN DE STOCK antes de descontar
         for (final d in detalles) {
           if (d.productoId != null) {
-            await _descontarStockReal(d.productoId!, d.cantidad);
+            final prod = await (_db.select(_db.productos)..where((p) => p.id.equals(d.productoId!))).getSingleOrNull();
+            if (prod != null && prod.cantidadDisponible < d.cantidad) {
+              throw Exception('Stock insuficiente para "${prod.nombre}". Disponible: ${prod.cantidadDisponible}');
+            }
           }
         }
+        for (final d in detalles) if (d.productoId != null) await _ajustarStock(d.productoId!, -d.cantidad);
+      } else if (actual.estado == 'ENTREGADO') {
+        for (final d in detalles) if (d.productoId != null) await _ajustarStock(d.productoId!, d.cantidad);
       }
-
-      await (_db.update(_db.encargos)..where((e) => e.id.equals(encargoId))).write(
-        db.EncargosCompanion(estado: Value(nuevoEstado)),
-      );
+      
+      await (_db.update(_db.encargos)..where((e) => e.id.equals(encargoId))).write(db.EncargosCompanion(estado: Value(nuevoEstado)));
     });
   }
 
-  Future<void> convertEncargoAVenta(int encargoId) async {
-    await changeEstadoEncargo(encargoId, 'ENTREGADO');
-  }
+  Future<void> convertEncargoAVenta(int encargoId) async => changeEstadoEncargo(encargoId, 'ENTREGADO');
 
   Future<void> deleteEncargo(int encargoId) async {
-    await (_db.update(_db.encargos)..where((e) => e.id.equals(encargoId))).write(
-      const db.EncargosCompanion(activo: Value(false)),
-    );
+    await _db.transaction(() async {
+      final row = await (_db.select(_db.encargos)..where((e) => e.id.equals(encargoId))).getSingleOrNull();
+      if (row == null || !row.activo) return;
+      if (row.estado == 'ENTREGADO') {
+        final dets = await (_db.select(_db.encargoDetalle)..where((d) => d.encargoId.equals(encargoId))).get();
+        for (final d in dets) if (d.productoId != null) await _ajustarStock(d.productoId!, d.cantidad);
+      }
+      await (_db.update(_db.encargos)..where((e) => e.id.equals(encargoId))).write(const db.EncargosCompanion(activo: Value(false)));
+    });
   }
 
   Future<domain.Encargo?> getEncargoById(int encargoId) async {
@@ -196,19 +184,15 @@ class EncargoLocalDataSource {
       observaciones: row.observaciones,
       tipoVenta: row.tipoVenta,
       activo: row.activo,
-      detalles: details
-          .map(
-            (detalle) => domain.EncargoDetalle(
-              id: detalle.id,
-              encargoId: detalle.encargoId,
-              productoId: detalle.productoId,
-              nombreTemporal: _getNombreTemporalSafe(detalle), 
-              cantidad: detalle.cantidad,
-              precioUnitario: detalle.precioUnitario,
-              costoUnitario: detalle.costoUnitario,
-            ),
-          )
-          .toList(),
+      detalles: details.map((d) => domain.EncargoDetalle(
+        id: d.id,
+        encargoId: d.encargoId,
+        productoId: d.productoId,
+        nombreTemporal: d.nombreTemporal, 
+        cantidad: d.cantidad,
+        precioUnitario: d.precioUnitario,
+        costoUnitario: d.costoUnitario,
+      )).toList(),
     );
   }
 

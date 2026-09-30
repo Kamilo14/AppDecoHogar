@@ -13,6 +13,9 @@ import '../../../productos/presentation/widgets/producto_form_dialog.dart';
 import '../../domain/entities/encargo_detalle_entity.dart';
 import '../../domain/entities/encargo_entity.dart';
 import '../providers/encargo_providers.dart';
+// Nuevos imports para registro de pago automático
+import '../../../pagos/domain/entities/pago_entity.dart';
+import '../../../pagos/presentation/providers/pago_providers.dart';
 
 class EncargoFormScreen extends ConsumerStatefulWidget {
   final Encargo? encargoExistente;
@@ -180,7 +183,29 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
     );
 
     try {
-      await ref.read(saveEncargoUseCaseProvider).call(encargo);
+      // Guardar el encargo y obtener su ID
+      final encargoId = await ref.read(saveEncargoUseCaseProvider).call(encargo);
+
+      // Si es venta directa y pago inmediato, registrar el pago automáticamente
+      if (widget.esVentaDirecta && _pagoInmediato && _clienteId != null) {
+        int totalVenta = 0;
+        for (final item in detallesEntidad) {
+          totalVenta += item.cantidad * (item.precioUnitario ?? 0);
+        }
+
+        final pago = Pago(
+          clienteId: _clienteId!,
+          encargoId: encargoId,
+          monto: totalVenta,
+          fecha: DateTime.now(),
+          metodo: 'Efectivo',
+          tipo: 'PAGO_TOTAL',
+          concepto: 'Pago total venta directa #${encargoId}',
+        );
+
+        await ref.read(registrarPagoUseCaseProvider).call(pago);
+      }
+
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
