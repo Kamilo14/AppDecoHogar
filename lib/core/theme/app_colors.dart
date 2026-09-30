@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
 abstract class AppColors {
-  // Fondos y Superficies - Estilo Ultra-Limpio y Luminoso
-  static const Color background = Color(0xFFFDFDFD); // Blanco nieve (muy cercano al blanco puro)
-  static const Color surface = Color(0xFFFFFFFF);    // Blanco puro para resaltar tarjetas
+  // Fondos y Superficies (Basado en look Dashboard)
+  static const Color background = Color(0xFFFAF8F5); // Crema
+  static const Color surface = Color(0xFFFFFCF9);    // Blanco cálido
   
-  // Tipografía Premium
-  static const Color textPrimary = Color(0xFF2C221E);   // Café tierra oscuro
-  static const Color textSecondary = Color(0xFF8A7863); // Café suave
+  // Tipografía
+  static const Color textPrimary = Color(0xFF2A2724);   // Café carbón oscuro
+  static const Color textSecondary = Color(0xFF8E867C); // Café suave
   
-  // Colores de Marca
-  static const Color primary = Color(0xFFC1512F);   // Terracota
-  static const Color secondary = Color(0xFF6B8F71); // Verde salvia
+  // Colores de Marca y Acentos (VERDE OLIVA ES EL PRINCIPAL)
+  static const Color primary = Color(0xFF748363);   // Verde oliva (Principal)
+  static const Color secondary = Color(0xFFC86442); // Terracota (Secundario/Acento)
+  static const Color tertiary = Color(0xFFC9A77D);  // Beige
   
   // Estados Semánticos
   static const Color success = Color(0xFF7A9D76);
@@ -19,6 +20,6 @@ abstract class AppColors {
   static const Color warning = Color(0xFFD9A441);
   
   // Bordes y Detalles
-  static const Color outline = Color(0xFFEFE6D9); 
-  static const Color muted = Color(0xFFF3EDE2);
+  static const Color outline = Color(0xFFF0EAE4); // Border
+  static const Color muted = Color(0xFFF3EAE0);   // IconBg / Muted
 }

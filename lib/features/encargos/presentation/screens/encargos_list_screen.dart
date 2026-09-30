@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/warm_ui.dart';
@@ -27,177 +28,225 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
     final clientes = ref.watch(clientesStreamProvider).asData?.value ?? const [];
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF5EFE6), Color(0xFFFFFDF9)],
-          ),
-        ),
-        child: SafeArea(
-          child: encargosAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(child: Text('Error: $error')),
-            data: (encargos) {
-              final filtrados = encargos.where((e) {
-                if (_filtroEstado == null) return e.activo;
-                return e.activo && e.estado.toUpperCase() == _filtroEstado!.toUpperCase();
-              }).toList();
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: encargosAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(child: Text('Error: $error')),
+          data: (encargos) {
+            final filtrados = encargos.where((e) {
+              if (_filtroEstado == null) return e.activo;
+              return e.activo && e.estado.toUpperCase() == _filtroEstado!.toUpperCase();
+            }).toList();
 
-              return ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Encargos',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+            return ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Encargos',
+                      style: GoogleFonts.outfit(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.8,
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.tune_outlined),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.outline),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.tune_rounded, color: AppColors.textPrimary, size: 22),
                         onPressed: () {},
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Filter Chips
+                SizedBox(
+                  height: 40,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _buildFilterChip('Todos', null),
+                      _buildFilterChip('Pendiente', 'PENDIENTE'),
+                      _buildFilterChip('Comprado', 'COMPRADO'),
+                      _buildFilterChip('Entregado', 'ENTREGADO'),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  // Filter Chips
-                  SizedBox(
-                    height: 38,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: const Text('Todos'),
-                            selected: _filtroEstado == null,
-                            onSelected: (selected) {
-                              if (selected) setState(() => _filtroEstado = null);
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: const Text('Pendiente'),
-                            selected: _filtroEstado == 'PENDIENTE',
-                            onSelected: (selected) {
-                              if (selected) setState(() => _filtroEstado = 'PENDIENTE');
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: const Text('En producción'),
-                            selected: _filtroEstado == 'COMPRADO',
-                            onSelected: (selected) {
-                              if (selected) setState(() => _filtroEstado = 'COMPRADO');
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: const Text('Entregado'),
-                            selected: _filtroEstado == 'ENTREGADO',
-                            onSelected: (selected) {
-                              if (selected) setState(() => _filtroEstado = 'ENTREGADO');
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (filtrados.isEmpty)
-                    WarmSurfaceCard(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 36),
-                        child: Center(
-                          child: Text(
-                            'Aún no hay encargos en este estado',
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    ...filtrados.map((encargo) {
-                      final clienteNombre = clientes.firstWhere(
-                        (cliente) => cliente.id == encargo.clienteId,
-                        orElse: () => Cliente(nombre: 'Cliente', fechaRegistro: DateTime(2000)),
-                      ).nombre;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: WarmSurfaceCard(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => EncargoDetailScreen(encargo: encargo),
-                              ),
-                            );
-                          },
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          'ENC-${encargo.id}',
-                                          style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 13, color: const Color(0xFF2C221E).withValues(alpha: 0.5)),
-                                        ),
-                                        const Spacer(),
-                                        Text(
-                                          formatCurrencyClp(encargo.total),
-                                          style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16, color: const Color(0xFF2C221E)),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      clienteNombre,
-                                      style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF2C221E)),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        WarmStatusChip(estado: encargo.estado),
-                                        Text(
-                                          formatDateCl(encargo.fecha),
-                                          style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF2C221E).withValues(alpha: 0.4)),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                ],
-              );
-            },
-          ),
+                ),
+                const SizedBox(height: 24),
+                if (filtrados.isEmpty)
+                  _buildEmptyState()
+                else
+                  ...filtrados.map((encargo) {
+                    final cliente = clientes.firstWhere(
+                      (c) => c.id == encargo.clienteId,
+                      orElse: () => Cliente(nombre: 'Cliente Desconocido', fechaRegistro: DateTime.now()),
+                    );
+                    return _EncargoCard(encargo: encargo, clienteNombre: cliente.nombre);
+                  }),
+              ],
+            );
+          },
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: const CircleBorder(),
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const EncargoFormScreen()),
           );
         },
         child: const Icon(Icons.add, size: 28),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String? estado) {
+    final isSelected = _filtroEstado == estado;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          if (selected) setState(() => _filtroEstado = estado);
+        },
+        backgroundColor: AppColors.surface,
+        selectedColor: AppColors.secondary.withValues(alpha: 0.2),
+        labelStyle: GoogleFonts.outfit(
+          color: isSelected ? AppColors.secondary : AppColors.textSecondary,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          fontSize: 13,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: isSelected ? AppColors.secondary.withValues(alpha: 0.5) : AppColors.outline),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.outline),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.assignment_late_outlined, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.3)),
+            const SizedBox(height: 16),
+            Text(
+              'No hay encargos en este estado',
+              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EncargoCard extends StatelessWidget {
+  final dynamic encargo;
+  final String clienteNombre;
+
+  const _EncargoCard({required this.encargo, required this.clienteNombre});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4))
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => EncargoDetailScreen(encargo: encargo),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'ENC-${encargo.id}',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: AppColors.textSecondary.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    Text(
+                      formatCurrencyClp(encargo.total),
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  clienteNombre,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    WarmStatusChip(estado: encargo.estado),
+                    Text(
+                      formatDateCl(encargo.fecha),
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
