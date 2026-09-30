@@ -38,4 +38,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - documentación/diseño/LoginDecoHogar.png
+    - assets/images/login_deco_hogar.png

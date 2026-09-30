@@ -140,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'documentación/diseño/LoginDecoHogar.png',
+              'assets/images/login_deco_hogar.png',
               fit: BoxFit.cover,
               alignment: Alignment.center,
               errorBuilder: (context, error, stackTrace) => Container(color: AppColors.background),
