@@ -652,9 +652,17 @@ class $ViajesTable extends Viajes with TableInfo<$ViajesTable, Viaje> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("distribuido" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _montoDistribuidoMeta =
+      const VerificationMeta('montoDistribuido');
+  @override
+  late final GeneratedColumn<int> montoDistribuido = GeneratedColumn<int>(
+      'monto_distribuido', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, fecha, destino, observaciones, distribuido];
+      [id, fecha, destino, observaciones, distribuido, montoDistribuido];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -692,6 +700,12 @@ class $ViajesTable extends Viajes with TableInfo<$ViajesTable, Viaje> {
           distribuido.isAcceptableOrUnknown(
               data['distribuido']!, _distribuidoMeta));
     }
+    if (data.containsKey('monto_distribuido')) {
+      context.handle(
+          _montoDistribuidoMeta,
+          montoDistribuido.isAcceptableOrUnknown(
+              data['monto_distribuido']!, _montoDistribuidoMeta));
+    }
     return context;
   }
 
@@ -711,6 +725,8 @@ class $ViajesTable extends Viajes with TableInfo<$ViajesTable, Viaje> {
           .read(DriftSqlType.string, data['${effectivePrefix}observaciones']),
       distribuido: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}distribuido'])!,
+      montoDistribuido: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}monto_distribuido'])!,
     );
   }
 
@@ -726,12 +742,14 @@ class Viaje extends DataClass implements Insertable<Viaje> {
   final String destino;
   final String? observaciones;
   final bool distribuido;
+  final int montoDistribuido;
   const Viaje(
       {required this.id,
       required this.fecha,
       required this.destino,
       this.observaciones,
-      required this.distribuido});
+      required this.distribuido,
+      required this.montoDistribuido});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -742,6 +760,7 @@ class Viaje extends DataClass implements Insertable<Viaje> {
       map['observaciones'] = Variable<String>(observaciones);
     }
     map['distribuido'] = Variable<bool>(distribuido);
+    map['monto_distribuido'] = Variable<int>(montoDistribuido);
     return map;
   }
 
@@ -754,6 +773,7 @@ class Viaje extends DataClass implements Insertable<Viaje> {
           ? const Value.absent()
           : Value(observaciones),
       distribuido: Value(distribuido),
+      montoDistribuido: Value(montoDistribuido),
     );
   }
 
@@ -766,6 +786,7 @@ class Viaje extends DataClass implements Insertable<Viaje> {
       destino: serializer.fromJson<String>(json['destino']),
       observaciones: serializer.fromJson<String?>(json['observaciones']),
       distribuido: serializer.fromJson<bool>(json['distribuido']),
+      montoDistribuido: serializer.fromJson<int>(json['montoDistribuido']),
     );
   }
   @override
@@ -777,6 +798,7 @@ class Viaje extends DataClass implements Insertable<Viaje> {
       'destino': serializer.toJson<String>(destino),
       'observaciones': serializer.toJson<String?>(observaciones),
       'distribuido': serializer.toJson<bool>(distribuido),
+      'montoDistribuido': serializer.toJson<int>(montoDistribuido),
     };
   }
 
@@ -785,7 +807,8 @@ class Viaje extends DataClass implements Insertable<Viaje> {
           DateTime? fecha,
           String? destino,
           Value<String?> observaciones = const Value.absent(),
-          bool? distribuido}) =>
+          bool? distribuido,
+          int? montoDistribuido}) =>
       Viaje(
         id: id ?? this.id,
         fecha: fecha ?? this.fecha,
@@ -793,6 +816,7 @@ class Viaje extends DataClass implements Insertable<Viaje> {
         observaciones:
             observaciones.present ? observaciones.value : this.observaciones,
         distribuido: distribuido ?? this.distribuido,
+        montoDistribuido: montoDistribuido ?? this.montoDistribuido,
       );
   Viaje copyWithCompanion(ViajesCompanion data) {
     return Viaje(
@@ -804,6 +828,9 @@ class Viaje extends DataClass implements Insertable<Viaje> {
           : this.observaciones,
       distribuido:
           data.distribuido.present ? data.distribuido.value : this.distribuido,
+      montoDistribuido: data.montoDistribuido.present
+          ? data.montoDistribuido.value
+          : this.montoDistribuido,
     );
   }
 
@@ -814,14 +841,15 @@ class Viaje extends DataClass implements Insertable<Viaje> {
           ..write('fecha: $fecha, ')
           ..write('destino: $destino, ')
           ..write('observaciones: $observaciones, ')
-          ..write('distribuido: $distribuido')
+          ..write('distribuido: $distribuido, ')
+          ..write('montoDistribuido: $montoDistribuido')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, fecha, destino, observaciones, distribuido);
+  int get hashCode => Object.hash(
+      id, fecha, destino, observaciones, distribuido, montoDistribuido);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -830,7 +858,8 @@ class Viaje extends DataClass implements Insertable<Viaje> {
           other.fecha == this.fecha &&
           other.destino == this.destino &&
           other.observaciones == this.observaciones &&
-          other.distribuido == this.distribuido);
+          other.distribuido == this.distribuido &&
+          other.montoDistribuido == this.montoDistribuido);
 }
 
 class ViajesCompanion extends UpdateCompanion<Viaje> {
@@ -839,12 +868,14 @@ class ViajesCompanion extends UpdateCompanion<Viaje> {
   final Value<String> destino;
   final Value<String?> observaciones;
   final Value<bool> distribuido;
+  final Value<int> montoDistribuido;
   const ViajesCompanion({
     this.id = const Value.absent(),
     this.fecha = const Value.absent(),
     this.destino = const Value.absent(),
     this.observaciones = const Value.absent(),
     this.distribuido = const Value.absent(),
+    this.montoDistribuido = const Value.absent(),
   });
   ViajesCompanion.insert({
     this.id = const Value.absent(),
@@ -852,6 +883,7 @@ class ViajesCompanion extends UpdateCompanion<Viaje> {
     required String destino,
     this.observaciones = const Value.absent(),
     this.distribuido = const Value.absent(),
+    this.montoDistribuido = const Value.absent(),
   })  : fecha = Value(fecha),
         destino = Value(destino);
   static Insertable<Viaje> custom({
@@ -860,6 +892,7 @@ class ViajesCompanion extends UpdateCompanion<Viaje> {
     Expression<String>? destino,
     Expression<String>? observaciones,
     Expression<bool>? distribuido,
+    Expression<int>? montoDistribuido,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -867,6 +900,7 @@ class ViajesCompanion extends UpdateCompanion<Viaje> {
       if (destino != null) 'destino': destino,
       if (observaciones != null) 'observaciones': observaciones,
       if (distribuido != null) 'distribuido': distribuido,
+      if (montoDistribuido != null) 'monto_distribuido': montoDistribuido,
     });
   }
 
@@ -875,13 +909,15 @@ class ViajesCompanion extends UpdateCompanion<Viaje> {
       Value<DateTime>? fecha,
       Value<String>? destino,
       Value<String?>? observaciones,
-      Value<bool>? distribuido}) {
+      Value<bool>? distribuido,
+      Value<int>? montoDistribuido}) {
     return ViajesCompanion(
       id: id ?? this.id,
       fecha: fecha ?? this.fecha,
       destino: destino ?? this.destino,
       observaciones: observaciones ?? this.observaciones,
       distribuido: distribuido ?? this.distribuido,
+      montoDistribuido: montoDistribuido ?? this.montoDistribuido,
     );
   }
 
@@ -903,6 +939,9 @@ class ViajesCompanion extends UpdateCompanion<Viaje> {
     if (distribuido.present) {
       map['distribuido'] = Variable<bool>(distribuido.value);
     }
+    if (montoDistribuido.present) {
+      map['monto_distribuido'] = Variable<int>(montoDistribuido.value);
+    }
     return map;
   }
 
@@ -913,7 +952,8 @@ class ViajesCompanion extends UpdateCompanion<Viaje> {
           ..write('fecha: $fecha, ')
           ..write('destino: $destino, ')
           ..write('observaciones: $observaciones, ')
-          ..write('distribuido: $distribuido')
+          ..write('distribuido: $distribuido, ')
+          ..write('montoDistribuido: $montoDistribuido')
           ..write(')'))
         .toString();
   }
@@ -1785,6 +1825,12 @@ class $EncargosTable extends Encargos with TableInfo<$EncargosTable, Encargo> {
   late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
       'fecha', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _fechaEntregaRealMeta =
+      const VerificationMeta('fechaEntregaReal');
+  @override
+  late final GeneratedColumn<DateTime> fechaEntregaReal =
+      GeneratedColumn<DateTime>('fecha_entrega_real', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _fechaEntregaEstimadaMeta =
       const VerificationMeta('fechaEntregaEstimada');
   @override
@@ -1825,6 +1871,7 @@ class $EncargosTable extends Encargos with TableInfo<$EncargosTable, Encargo> {
         clienteId,
         correlativoCliente,
         fecha,
+        fechaEntregaReal,
         fechaEntregaEstimada,
         estado,
         observaciones,
@@ -1859,6 +1906,12 @@ class $EncargosTable extends Encargos with TableInfo<$EncargosTable, Encargo> {
           _fechaMeta, fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta));
     } else if (isInserting) {
       context.missing(_fechaMeta);
+    }
+    if (data.containsKey('fecha_entrega_real')) {
+      context.handle(
+          _fechaEntregaRealMeta,
+          fechaEntregaReal.isAcceptableOrUnknown(
+              data['fecha_entrega_real']!, _fechaEntregaRealMeta));
     }
     if (data.containsKey('fecha_entrega_estimada')) {
       context.handle(
@@ -1903,6 +1956,8 @@ class $EncargosTable extends Encargos with TableInfo<$EncargosTable, Encargo> {
           DriftSqlType.int, data['${effectivePrefix}correlativo_cliente'])!,
       fecha: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha'])!,
+      fechaEntregaReal: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}fecha_entrega_real']),
       fechaEntregaEstimada: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime,
           data['${effectivePrefix}fecha_entrega_estimada']),
@@ -1930,6 +1985,7 @@ class Encargo extends DataClass implements Insertable<Encargo> {
   /// Regla 8.6: Numeración local al cliente (ENC-1, ENC-2...)
   final int correlativoCliente;
   final DateTime fecha;
+  final DateTime? fechaEntregaReal;
   final DateTime? fechaEntregaEstimada;
   final String estado;
   final String? observaciones;
@@ -1940,6 +1996,7 @@ class Encargo extends DataClass implements Insertable<Encargo> {
       this.clienteId,
       required this.correlativoCliente,
       required this.fecha,
+      this.fechaEntregaReal,
       this.fechaEntregaEstimada,
       required this.estado,
       this.observaciones,
@@ -1954,6 +2011,9 @@ class Encargo extends DataClass implements Insertable<Encargo> {
     }
     map['correlativo_cliente'] = Variable<int>(correlativoCliente);
     map['fecha'] = Variable<DateTime>(fecha);
+    if (!nullToAbsent || fechaEntregaReal != null) {
+      map['fecha_entrega_real'] = Variable<DateTime>(fechaEntregaReal);
+    }
     if (!nullToAbsent || fechaEntregaEstimada != null) {
       map['fecha_entrega_estimada'] = Variable<DateTime>(fechaEntregaEstimada);
     }
@@ -1974,6 +2034,9 @@ class Encargo extends DataClass implements Insertable<Encargo> {
           : Value(clienteId),
       correlativoCliente: Value(correlativoCliente),
       fecha: Value(fecha),
+      fechaEntregaReal: fechaEntregaReal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fechaEntregaReal),
       fechaEntregaEstimada: fechaEntregaEstimada == null && nullToAbsent
           ? const Value.absent()
           : Value(fechaEntregaEstimada),
@@ -1994,6 +2057,8 @@ class Encargo extends DataClass implements Insertable<Encargo> {
       clienteId: serializer.fromJson<int?>(json['clienteId']),
       correlativoCliente: serializer.fromJson<int>(json['correlativoCliente']),
       fecha: serializer.fromJson<DateTime>(json['fecha']),
+      fechaEntregaReal:
+          serializer.fromJson<DateTime?>(json['fechaEntregaReal']),
       fechaEntregaEstimada:
           serializer.fromJson<DateTime?>(json['fechaEntregaEstimada']),
       estado: serializer.fromJson<String>(json['estado']),
@@ -2010,6 +2075,7 @@ class Encargo extends DataClass implements Insertable<Encargo> {
       'clienteId': serializer.toJson<int?>(clienteId),
       'correlativoCliente': serializer.toJson<int>(correlativoCliente),
       'fecha': serializer.toJson<DateTime>(fecha),
+      'fechaEntregaReal': serializer.toJson<DateTime?>(fechaEntregaReal),
       'fechaEntregaEstimada':
           serializer.toJson<DateTime?>(fechaEntregaEstimada),
       'estado': serializer.toJson<String>(estado),
@@ -2024,6 +2090,7 @@ class Encargo extends DataClass implements Insertable<Encargo> {
           Value<int?> clienteId = const Value.absent(),
           int? correlativoCliente,
           DateTime? fecha,
+          Value<DateTime?> fechaEntregaReal = const Value.absent(),
           Value<DateTime?> fechaEntregaEstimada = const Value.absent(),
           String? estado,
           Value<String?> observaciones = const Value.absent(),
@@ -2034,6 +2101,9 @@ class Encargo extends DataClass implements Insertable<Encargo> {
         clienteId: clienteId.present ? clienteId.value : this.clienteId,
         correlativoCliente: correlativoCliente ?? this.correlativoCliente,
         fecha: fecha ?? this.fecha,
+        fechaEntregaReal: fechaEntregaReal.present
+            ? fechaEntregaReal.value
+            : this.fechaEntregaReal,
         fechaEntregaEstimada: fechaEntregaEstimada.present
             ? fechaEntregaEstimada.value
             : this.fechaEntregaEstimada,
@@ -2051,6 +2121,9 @@ class Encargo extends DataClass implements Insertable<Encargo> {
           ? data.correlativoCliente.value
           : this.correlativoCliente,
       fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      fechaEntregaReal: data.fechaEntregaReal.present
+          ? data.fechaEntregaReal.value
+          : this.fechaEntregaReal,
       fechaEntregaEstimada: data.fechaEntregaEstimada.present
           ? data.fechaEntregaEstimada.value
           : this.fechaEntregaEstimada,
@@ -2070,6 +2143,7 @@ class Encargo extends DataClass implements Insertable<Encargo> {
           ..write('clienteId: $clienteId, ')
           ..write('correlativoCliente: $correlativoCliente, ')
           ..write('fecha: $fecha, ')
+          ..write('fechaEntregaReal: $fechaEntregaReal, ')
           ..write('fechaEntregaEstimada: $fechaEntregaEstimada, ')
           ..write('estado: $estado, ')
           ..write('observaciones: $observaciones, ')
@@ -2080,8 +2154,17 @@ class Encargo extends DataClass implements Insertable<Encargo> {
   }
 
   @override
-  int get hashCode => Object.hash(id, clienteId, correlativoCliente, fecha,
-      fechaEntregaEstimada, estado, observaciones, tipoVenta, activo);
+  int get hashCode => Object.hash(
+      id,
+      clienteId,
+      correlativoCliente,
+      fecha,
+      fechaEntregaReal,
+      fechaEntregaEstimada,
+      estado,
+      observaciones,
+      tipoVenta,
+      activo);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2090,6 +2173,7 @@ class Encargo extends DataClass implements Insertable<Encargo> {
           other.clienteId == this.clienteId &&
           other.correlativoCliente == this.correlativoCliente &&
           other.fecha == this.fecha &&
+          other.fechaEntregaReal == this.fechaEntregaReal &&
           other.fechaEntregaEstimada == this.fechaEntregaEstimada &&
           other.estado == this.estado &&
           other.observaciones == this.observaciones &&
@@ -2102,6 +2186,7 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
   final Value<int?> clienteId;
   final Value<int> correlativoCliente;
   final Value<DateTime> fecha;
+  final Value<DateTime?> fechaEntregaReal;
   final Value<DateTime?> fechaEntregaEstimada;
   final Value<String> estado;
   final Value<String?> observaciones;
@@ -2112,6 +2197,7 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
     this.clienteId = const Value.absent(),
     this.correlativoCliente = const Value.absent(),
     this.fecha = const Value.absent(),
+    this.fechaEntregaReal = const Value.absent(),
     this.fechaEntregaEstimada = const Value.absent(),
     this.estado = const Value.absent(),
     this.observaciones = const Value.absent(),
@@ -2123,6 +2209,7 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
     this.clienteId = const Value.absent(),
     this.correlativoCliente = const Value.absent(),
     required DateTime fecha,
+    this.fechaEntregaReal = const Value.absent(),
     this.fechaEntregaEstimada = const Value.absent(),
     required String estado,
     this.observaciones = const Value.absent(),
@@ -2135,6 +2222,7 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
     Expression<int>? clienteId,
     Expression<int>? correlativoCliente,
     Expression<DateTime>? fecha,
+    Expression<DateTime>? fechaEntregaReal,
     Expression<DateTime>? fechaEntregaEstimada,
     Expression<String>? estado,
     Expression<String>? observaciones,
@@ -2146,6 +2234,7 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
       if (clienteId != null) 'cliente_id': clienteId,
       if (correlativoCliente != null) 'correlativo_cliente': correlativoCliente,
       if (fecha != null) 'fecha': fecha,
+      if (fechaEntregaReal != null) 'fecha_entrega_real': fechaEntregaReal,
       if (fechaEntregaEstimada != null)
         'fecha_entrega_estimada': fechaEntregaEstimada,
       if (estado != null) 'estado': estado,
@@ -2160,6 +2249,7 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
       Value<int?>? clienteId,
       Value<int>? correlativoCliente,
       Value<DateTime>? fecha,
+      Value<DateTime?>? fechaEntregaReal,
       Value<DateTime?>? fechaEntregaEstimada,
       Value<String>? estado,
       Value<String?>? observaciones,
@@ -2170,6 +2260,7 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
       clienteId: clienteId ?? this.clienteId,
       correlativoCliente: correlativoCliente ?? this.correlativoCliente,
       fecha: fecha ?? this.fecha,
+      fechaEntregaReal: fechaEntregaReal ?? this.fechaEntregaReal,
       fechaEntregaEstimada: fechaEntregaEstimada ?? this.fechaEntregaEstimada,
       estado: estado ?? this.estado,
       observaciones: observaciones ?? this.observaciones,
@@ -2192,6 +2283,9 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
     }
     if (fecha.present) {
       map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (fechaEntregaReal.present) {
+      map['fecha_entrega_real'] = Variable<DateTime>(fechaEntregaReal.value);
     }
     if (fechaEntregaEstimada.present) {
       map['fecha_entrega_estimada'] =
@@ -2219,11 +2313,490 @@ class EncargosCompanion extends UpdateCompanion<Encargo> {
           ..write('clienteId: $clienteId, ')
           ..write('correlativoCliente: $correlativoCliente, ')
           ..write('fecha: $fecha, ')
+          ..write('fechaEntregaReal: $fechaEntregaReal, ')
           ..write('fechaEntregaEstimada: $fechaEntregaEstimada, ')
           ..write('estado: $estado, ')
           ..write('observaciones: $observaciones, ')
           ..write('tipoVenta: $tipoVenta, ')
           ..write('activo: $activo')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ComprasTable extends Compras with TableInfo<$ComprasTable, Compra> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ComprasTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _viajeIdMeta =
+      const VerificationMeta('viajeId');
+  @override
+  late final GeneratedColumn<int> viajeId = GeneratedColumn<int>(
+      'viaje_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES viajes (id)'));
+  static const VerificationMeta _productoIdMeta =
+      const VerificationMeta('productoId');
+  @override
+  late final GeneratedColumn<int> productoId = GeneratedColumn<int>(
+      'producto_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES productos (id)'));
+  static const VerificationMeta _nombreProductoMeta =
+      const VerificationMeta('nombreProducto');
+  @override
+  late final GeneratedColumn<String> nombreProducto = GeneratedColumn<String>(
+      'nombre_producto', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+      'fecha', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _cantidadMeta =
+      const VerificationMeta('cantidad');
+  @override
+  late final GeneratedColumn<int> cantidad = GeneratedColumn<int>(
+      'cantidad', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _costoUnitarioMeta =
+      const VerificationMeta('costoUnitario');
+  @override
+  late final GeneratedColumn<int> costoUnitario = GeneratedColumn<int>(
+      'costo_unitario', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _precioVentaMeta =
+      const VerificationMeta('precioVenta');
+  @override
+  late final GeneratedColumn<int> precioVenta = GeneratedColumn<int>(
+      'precio_venta', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _gastoAsignadoMeta =
+      const VerificationMeta('gastoAsignado');
+  @override
+  late final GeneratedColumn<int> gastoAsignado = GeneratedColumn<int>(
+      'gasto_asignado', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        viajeId,
+        productoId,
+        nombreProducto,
+        fecha,
+        cantidad,
+        costoUnitario,
+        precioVenta,
+        gastoAsignado
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'compras';
+  @override
+  VerificationContext validateIntegrity(Insertable<Compra> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('viaje_id')) {
+      context.handle(_viajeIdMeta,
+          viajeId.isAcceptableOrUnknown(data['viaje_id']!, _viajeIdMeta));
+    } else if (isInserting) {
+      context.missing(_viajeIdMeta);
+    }
+    if (data.containsKey('producto_id')) {
+      context.handle(
+          _productoIdMeta,
+          productoId.isAcceptableOrUnknown(
+              data['producto_id']!, _productoIdMeta));
+    } else if (isInserting) {
+      context.missing(_productoIdMeta);
+    }
+    if (data.containsKey('nombre_producto')) {
+      context.handle(
+          _nombreProductoMeta,
+          nombreProducto.isAcceptableOrUnknown(
+              data['nombre_producto']!, _nombreProductoMeta));
+    } else if (isInserting) {
+      context.missing(_nombreProductoMeta);
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+          _fechaMeta, fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta));
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('cantidad')) {
+      context.handle(_cantidadMeta,
+          cantidad.isAcceptableOrUnknown(data['cantidad']!, _cantidadMeta));
+    } else if (isInserting) {
+      context.missing(_cantidadMeta);
+    }
+    if (data.containsKey('costo_unitario')) {
+      context.handle(
+          _costoUnitarioMeta,
+          costoUnitario.isAcceptableOrUnknown(
+              data['costo_unitario']!, _costoUnitarioMeta));
+    } else if (isInserting) {
+      context.missing(_costoUnitarioMeta);
+    }
+    if (data.containsKey('precio_venta')) {
+      context.handle(
+          _precioVentaMeta,
+          precioVenta.isAcceptableOrUnknown(
+              data['precio_venta']!, _precioVentaMeta));
+    } else if (isInserting) {
+      context.missing(_precioVentaMeta);
+    }
+    if (data.containsKey('gasto_asignado')) {
+      context.handle(
+          _gastoAsignadoMeta,
+          gastoAsignado.isAcceptableOrUnknown(
+              data['gasto_asignado']!, _gastoAsignadoMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Compra map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Compra(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      viajeId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}viaje_id'])!,
+      productoId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}producto_id'])!,
+      nombreProducto: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}nombre_producto'])!,
+      fecha: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha'])!,
+      cantidad: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}cantidad'])!,
+      costoUnitario: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}costo_unitario'])!,
+      precioVenta: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}precio_venta'])!,
+      gastoAsignado: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}gasto_asignado'])!,
+    );
+  }
+
+  @override
+  $ComprasTable createAlias(String alias) {
+    return $ComprasTable(attachedDatabase, alias);
+  }
+}
+
+class Compra extends DataClass implements Insertable<Compra> {
+  final int id;
+  final int viajeId;
+  final int productoId;
+  final String nombreProducto;
+  final DateTime fecha;
+  final int cantidad;
+  final int costoUnitario;
+  final int precioVenta;
+  final int gastoAsignado;
+  const Compra(
+      {required this.id,
+      required this.viajeId,
+      required this.productoId,
+      required this.nombreProducto,
+      required this.fecha,
+      required this.cantidad,
+      required this.costoUnitario,
+      required this.precioVenta,
+      required this.gastoAsignado});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['viaje_id'] = Variable<int>(viajeId);
+    map['producto_id'] = Variable<int>(productoId);
+    map['nombre_producto'] = Variable<String>(nombreProducto);
+    map['fecha'] = Variable<DateTime>(fecha);
+    map['cantidad'] = Variable<int>(cantidad);
+    map['costo_unitario'] = Variable<int>(costoUnitario);
+    map['precio_venta'] = Variable<int>(precioVenta);
+    map['gasto_asignado'] = Variable<int>(gastoAsignado);
+    return map;
+  }
+
+  ComprasCompanion toCompanion(bool nullToAbsent) {
+    return ComprasCompanion(
+      id: Value(id),
+      viajeId: Value(viajeId),
+      productoId: Value(productoId),
+      nombreProducto: Value(nombreProducto),
+      fecha: Value(fecha),
+      cantidad: Value(cantidad),
+      costoUnitario: Value(costoUnitario),
+      precioVenta: Value(precioVenta),
+      gastoAsignado: Value(gastoAsignado),
+    );
+  }
+
+  factory Compra.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Compra(
+      id: serializer.fromJson<int>(json['id']),
+      viajeId: serializer.fromJson<int>(json['viajeId']),
+      productoId: serializer.fromJson<int>(json['productoId']),
+      nombreProducto: serializer.fromJson<String>(json['nombreProducto']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      cantidad: serializer.fromJson<int>(json['cantidad']),
+      costoUnitario: serializer.fromJson<int>(json['costoUnitario']),
+      precioVenta: serializer.fromJson<int>(json['precioVenta']),
+      gastoAsignado: serializer.fromJson<int>(json['gastoAsignado']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'viajeId': serializer.toJson<int>(viajeId),
+      'productoId': serializer.toJson<int>(productoId),
+      'nombreProducto': serializer.toJson<String>(nombreProducto),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'cantidad': serializer.toJson<int>(cantidad),
+      'costoUnitario': serializer.toJson<int>(costoUnitario),
+      'precioVenta': serializer.toJson<int>(precioVenta),
+      'gastoAsignado': serializer.toJson<int>(gastoAsignado),
+    };
+  }
+
+  Compra copyWith(
+          {int? id,
+          int? viajeId,
+          int? productoId,
+          String? nombreProducto,
+          DateTime? fecha,
+          int? cantidad,
+          int? costoUnitario,
+          int? precioVenta,
+          int? gastoAsignado}) =>
+      Compra(
+        id: id ?? this.id,
+        viajeId: viajeId ?? this.viajeId,
+        productoId: productoId ?? this.productoId,
+        nombreProducto: nombreProducto ?? this.nombreProducto,
+        fecha: fecha ?? this.fecha,
+        cantidad: cantidad ?? this.cantidad,
+        costoUnitario: costoUnitario ?? this.costoUnitario,
+        precioVenta: precioVenta ?? this.precioVenta,
+        gastoAsignado: gastoAsignado ?? this.gastoAsignado,
+      );
+  Compra copyWithCompanion(ComprasCompanion data) {
+    return Compra(
+      id: data.id.present ? data.id.value : this.id,
+      viajeId: data.viajeId.present ? data.viajeId.value : this.viajeId,
+      productoId:
+          data.productoId.present ? data.productoId.value : this.productoId,
+      nombreProducto: data.nombreProducto.present
+          ? data.nombreProducto.value
+          : this.nombreProducto,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      cantidad: data.cantidad.present ? data.cantidad.value : this.cantidad,
+      costoUnitario: data.costoUnitario.present
+          ? data.costoUnitario.value
+          : this.costoUnitario,
+      precioVenta:
+          data.precioVenta.present ? data.precioVenta.value : this.precioVenta,
+      gastoAsignado: data.gastoAsignado.present
+          ? data.gastoAsignado.value
+          : this.gastoAsignado,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Compra(')
+          ..write('id: $id, ')
+          ..write('viajeId: $viajeId, ')
+          ..write('productoId: $productoId, ')
+          ..write('nombreProducto: $nombreProducto, ')
+          ..write('fecha: $fecha, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('costoUnitario: $costoUnitario, ')
+          ..write('precioVenta: $precioVenta, ')
+          ..write('gastoAsignado: $gastoAsignado')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, viajeId, productoId, nombreProducto,
+      fecha, cantidad, costoUnitario, precioVenta, gastoAsignado);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Compra &&
+          other.id == this.id &&
+          other.viajeId == this.viajeId &&
+          other.productoId == this.productoId &&
+          other.nombreProducto == this.nombreProducto &&
+          other.fecha == this.fecha &&
+          other.cantidad == this.cantidad &&
+          other.costoUnitario == this.costoUnitario &&
+          other.precioVenta == this.precioVenta &&
+          other.gastoAsignado == this.gastoAsignado);
+}
+
+class ComprasCompanion extends UpdateCompanion<Compra> {
+  final Value<int> id;
+  final Value<int> viajeId;
+  final Value<int> productoId;
+  final Value<String> nombreProducto;
+  final Value<DateTime> fecha;
+  final Value<int> cantidad;
+  final Value<int> costoUnitario;
+  final Value<int> precioVenta;
+  final Value<int> gastoAsignado;
+  const ComprasCompanion({
+    this.id = const Value.absent(),
+    this.viajeId = const Value.absent(),
+    this.productoId = const Value.absent(),
+    this.nombreProducto = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.cantidad = const Value.absent(),
+    this.costoUnitario = const Value.absent(),
+    this.precioVenta = const Value.absent(),
+    this.gastoAsignado = const Value.absent(),
+  });
+  ComprasCompanion.insert({
+    this.id = const Value.absent(),
+    required int viajeId,
+    required int productoId,
+    required String nombreProducto,
+    required DateTime fecha,
+    required int cantidad,
+    required int costoUnitario,
+    required int precioVenta,
+    this.gastoAsignado = const Value.absent(),
+  })  : viajeId = Value(viajeId),
+        productoId = Value(productoId),
+        nombreProducto = Value(nombreProducto),
+        fecha = Value(fecha),
+        cantidad = Value(cantidad),
+        costoUnitario = Value(costoUnitario),
+        precioVenta = Value(precioVenta);
+  static Insertable<Compra> custom({
+    Expression<int>? id,
+    Expression<int>? viajeId,
+    Expression<int>? productoId,
+    Expression<String>? nombreProducto,
+    Expression<DateTime>? fecha,
+    Expression<int>? cantidad,
+    Expression<int>? costoUnitario,
+    Expression<int>? precioVenta,
+    Expression<int>? gastoAsignado,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (viajeId != null) 'viaje_id': viajeId,
+      if (productoId != null) 'producto_id': productoId,
+      if (nombreProducto != null) 'nombre_producto': nombreProducto,
+      if (fecha != null) 'fecha': fecha,
+      if (cantidad != null) 'cantidad': cantidad,
+      if (costoUnitario != null) 'costo_unitario': costoUnitario,
+      if (precioVenta != null) 'precio_venta': precioVenta,
+      if (gastoAsignado != null) 'gasto_asignado': gastoAsignado,
+    });
+  }
+
+  ComprasCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? viajeId,
+      Value<int>? productoId,
+      Value<String>? nombreProducto,
+      Value<DateTime>? fecha,
+      Value<int>? cantidad,
+      Value<int>? costoUnitario,
+      Value<int>? precioVenta,
+      Value<int>? gastoAsignado}) {
+    return ComprasCompanion(
+      id: id ?? this.id,
+      viajeId: viajeId ?? this.viajeId,
+      productoId: productoId ?? this.productoId,
+      nombreProducto: nombreProducto ?? this.nombreProducto,
+      fecha: fecha ?? this.fecha,
+      cantidad: cantidad ?? this.cantidad,
+      costoUnitario: costoUnitario ?? this.costoUnitario,
+      precioVenta: precioVenta ?? this.precioVenta,
+      gastoAsignado: gastoAsignado ?? this.gastoAsignado,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (viajeId.present) {
+      map['viaje_id'] = Variable<int>(viajeId.value);
+    }
+    if (productoId.present) {
+      map['producto_id'] = Variable<int>(productoId.value);
+    }
+    if (nombreProducto.present) {
+      map['nombre_producto'] = Variable<String>(nombreProducto.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (cantidad.present) {
+      map['cantidad'] = Variable<int>(cantidad.value);
+    }
+    if (costoUnitario.present) {
+      map['costo_unitario'] = Variable<int>(costoUnitario.value);
+    }
+    if (precioVenta.present) {
+      map['precio_venta'] = Variable<int>(precioVenta.value);
+    }
+    if (gastoAsignado.present) {
+      map['gasto_asignado'] = Variable<int>(gastoAsignado.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComprasCompanion(')
+          ..write('id: $id, ')
+          ..write('viajeId: $viajeId, ')
+          ..write('productoId: $productoId, ')
+          ..write('nombreProducto: $nombreProducto, ')
+          ..write('fecha: $fecha, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('costoUnitario: $costoUnitario, ')
+          ..write('precioVenta: $precioVenta, ')
+          ..write('gastoAsignado: $gastoAsignado')
           ..write(')'))
         .toString();
   }
@@ -2274,6 +2847,37 @@ class $EncargoDetalleTable extends EncargoDetalle
   late final GeneratedColumn<int> cantidad = GeneratedColumn<int>(
       'cantidad', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _compraIdMeta =
+      const VerificationMeta('compraId');
+  @override
+  late final GeneratedColumn<int> compraId = GeneratedColumn<int>(
+      'compra_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES compras (id)'));
+  static const VerificationMeta _costoLogisticaMeta =
+      const VerificationMeta('costoLogistica');
+  @override
+  late final GeneratedColumn<int> costoLogistica = GeneratedColumn<int>(
+      'costo_logistica', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _cantidadCompradaMeta =
+      const VerificationMeta('cantidadComprada');
+  @override
+  late final GeneratedColumn<int> cantidadComprada = GeneratedColumn<int>(
+      'cantidad_comprada', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _compradoMeta =
+      const VerificationMeta('comprado');
+  @override
+  late final GeneratedColumn<bool> comprado = GeneratedColumn<bool>(
+      'comprado', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("comprado" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _precioUnitarioMeta =
       const VerificationMeta('precioUnitario');
   @override
@@ -2293,6 +2897,10 @@ class $EncargoDetalleTable extends EncargoDetalle
         productoId,
         nombreTemporal,
         cantidad,
+        compraId,
+        costoLogistica,
+        cantidadComprada,
+        comprado,
         precioUnitario,
         costoUnitario
       ];
@@ -2333,6 +2941,26 @@ class $EncargoDetalleTable extends EncargoDetalle
     } else if (isInserting) {
       context.missing(_cantidadMeta);
     }
+    if (data.containsKey('compra_id')) {
+      context.handle(_compraIdMeta,
+          compraId.isAcceptableOrUnknown(data['compra_id']!, _compraIdMeta));
+    }
+    if (data.containsKey('costo_logistica')) {
+      context.handle(
+          _costoLogisticaMeta,
+          costoLogistica.isAcceptableOrUnknown(
+              data['costo_logistica']!, _costoLogisticaMeta));
+    }
+    if (data.containsKey('cantidad_comprada')) {
+      context.handle(
+          _cantidadCompradaMeta,
+          cantidadComprada.isAcceptableOrUnknown(
+              data['cantidad_comprada']!, _cantidadCompradaMeta));
+    }
+    if (data.containsKey('comprado')) {
+      context.handle(_compradoMeta,
+          comprado.isAcceptableOrUnknown(data['comprado']!, _compradoMeta));
+    }
     if (data.containsKey('precio_unitario')) {
       context.handle(
           _precioUnitarioMeta,
@@ -2364,6 +2992,14 @@ class $EncargoDetalleTable extends EncargoDetalle
           .read(DriftSqlType.string, data['${effectivePrefix}nombre_temporal']),
       cantidad: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}cantidad'])!,
+      compraId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}compra_id']),
+      costoLogistica: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}costo_logistica']),
+      cantidadComprada: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}cantidad_comprada']),
+      comprado: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}comprado'])!,
       precioUnitario: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}precio_unitario']),
       costoUnitario: attachedDatabase.typeMapping
@@ -2384,6 +3020,10 @@ class EncargoDetalleData extends DataClass
   final int? productoId;
   final String? nombreTemporal;
   final int cantidad;
+  final int? compraId;
+  final int? costoLogistica;
+  final int? cantidadComprada;
+  final bool comprado;
   final int? precioUnitario;
   final int? costoUnitario;
   const EncargoDetalleData(
@@ -2392,6 +3032,10 @@ class EncargoDetalleData extends DataClass
       this.productoId,
       this.nombreTemporal,
       required this.cantidad,
+      this.compraId,
+      this.costoLogistica,
+      this.cantidadComprada,
+      required this.comprado,
       this.precioUnitario,
       this.costoUnitario});
   @override
@@ -2406,6 +3050,16 @@ class EncargoDetalleData extends DataClass
       map['nombre_temporal'] = Variable<String>(nombreTemporal);
     }
     map['cantidad'] = Variable<int>(cantidad);
+    if (!nullToAbsent || compraId != null) {
+      map['compra_id'] = Variable<int>(compraId);
+    }
+    if (!nullToAbsent || costoLogistica != null) {
+      map['costo_logistica'] = Variable<int>(costoLogistica);
+    }
+    if (!nullToAbsent || cantidadComprada != null) {
+      map['cantidad_comprada'] = Variable<int>(cantidadComprada);
+    }
+    map['comprado'] = Variable<bool>(comprado);
     if (!nullToAbsent || precioUnitario != null) {
       map['precio_unitario'] = Variable<int>(precioUnitario);
     }
@@ -2426,6 +3080,16 @@ class EncargoDetalleData extends DataClass
           ? const Value.absent()
           : Value(nombreTemporal),
       cantidad: Value(cantidad),
+      compraId: compraId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(compraId),
+      costoLogistica: costoLogistica == null && nullToAbsent
+          ? const Value.absent()
+          : Value(costoLogistica),
+      cantidadComprada: cantidadComprada == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cantidadComprada),
+      comprado: Value(comprado),
       precioUnitario: precioUnitario == null && nullToAbsent
           ? const Value.absent()
           : Value(precioUnitario),
@@ -2444,6 +3108,10 @@ class EncargoDetalleData extends DataClass
       productoId: serializer.fromJson<int?>(json['productoId']),
       nombreTemporal: serializer.fromJson<String?>(json['nombreTemporal']),
       cantidad: serializer.fromJson<int>(json['cantidad']),
+      compraId: serializer.fromJson<int?>(json['compraId']),
+      costoLogistica: serializer.fromJson<int?>(json['costoLogistica']),
+      cantidadComprada: serializer.fromJson<int?>(json['cantidadComprada']),
+      comprado: serializer.fromJson<bool>(json['comprado']),
       precioUnitario: serializer.fromJson<int?>(json['precioUnitario']),
       costoUnitario: serializer.fromJson<int?>(json['costoUnitario']),
     );
@@ -2457,6 +3125,10 @@ class EncargoDetalleData extends DataClass
       'productoId': serializer.toJson<int?>(productoId),
       'nombreTemporal': serializer.toJson<String?>(nombreTemporal),
       'cantidad': serializer.toJson<int>(cantidad),
+      'compraId': serializer.toJson<int?>(compraId),
+      'costoLogistica': serializer.toJson<int?>(costoLogistica),
+      'cantidadComprada': serializer.toJson<int?>(cantidadComprada),
+      'comprado': serializer.toJson<bool>(comprado),
       'precioUnitario': serializer.toJson<int?>(precioUnitario),
       'costoUnitario': serializer.toJson<int?>(costoUnitario),
     };
@@ -2468,6 +3140,10 @@ class EncargoDetalleData extends DataClass
           Value<int?> productoId = const Value.absent(),
           Value<String?> nombreTemporal = const Value.absent(),
           int? cantidad,
+          Value<int?> compraId = const Value.absent(),
+          Value<int?> costoLogistica = const Value.absent(),
+          Value<int?> cantidadComprada = const Value.absent(),
+          bool? comprado,
           Value<int?> precioUnitario = const Value.absent(),
           Value<int?> costoUnitario = const Value.absent()}) =>
       EncargoDetalleData(
@@ -2477,6 +3153,13 @@ class EncargoDetalleData extends DataClass
         nombreTemporal:
             nombreTemporal.present ? nombreTemporal.value : this.nombreTemporal,
         cantidad: cantidad ?? this.cantidad,
+        compraId: compraId.present ? compraId.value : this.compraId,
+        costoLogistica:
+            costoLogistica.present ? costoLogistica.value : this.costoLogistica,
+        cantidadComprada: cantidadComprada.present
+            ? cantidadComprada.value
+            : this.cantidadComprada,
+        comprado: comprado ?? this.comprado,
         precioUnitario:
             precioUnitario.present ? precioUnitario.value : this.precioUnitario,
         costoUnitario:
@@ -2492,6 +3175,14 @@ class EncargoDetalleData extends DataClass
           ? data.nombreTemporal.value
           : this.nombreTemporal,
       cantidad: data.cantidad.present ? data.cantidad.value : this.cantidad,
+      compraId: data.compraId.present ? data.compraId.value : this.compraId,
+      costoLogistica: data.costoLogistica.present
+          ? data.costoLogistica.value
+          : this.costoLogistica,
+      cantidadComprada: data.cantidadComprada.present
+          ? data.cantidadComprada.value
+          : this.cantidadComprada,
+      comprado: data.comprado.present ? data.comprado.value : this.comprado,
       precioUnitario: data.precioUnitario.present
           ? data.precioUnitario.value
           : this.precioUnitario,
@@ -2509,6 +3200,10 @@ class EncargoDetalleData extends DataClass
           ..write('productoId: $productoId, ')
           ..write('nombreTemporal: $nombreTemporal, ')
           ..write('cantidad: $cantidad, ')
+          ..write('compraId: $compraId, ')
+          ..write('costoLogistica: $costoLogistica, ')
+          ..write('cantidadComprada: $cantidadComprada, ')
+          ..write('comprado: $comprado, ')
           ..write('precioUnitario: $precioUnitario, ')
           ..write('costoUnitario: $costoUnitario')
           ..write(')'))
@@ -2516,8 +3211,18 @@ class EncargoDetalleData extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, encargoId, productoId, nombreTemporal,
-      cantidad, precioUnitario, costoUnitario);
+  int get hashCode => Object.hash(
+      id,
+      encargoId,
+      productoId,
+      nombreTemporal,
+      cantidad,
+      compraId,
+      costoLogistica,
+      cantidadComprada,
+      comprado,
+      precioUnitario,
+      costoUnitario);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2527,6 +3232,10 @@ class EncargoDetalleData extends DataClass
           other.productoId == this.productoId &&
           other.nombreTemporal == this.nombreTemporal &&
           other.cantidad == this.cantidad &&
+          other.compraId == this.compraId &&
+          other.costoLogistica == this.costoLogistica &&
+          other.cantidadComprada == this.cantidadComprada &&
+          other.comprado == this.comprado &&
           other.precioUnitario == this.precioUnitario &&
           other.costoUnitario == this.costoUnitario);
 }
@@ -2537,6 +3246,10 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
   final Value<int?> productoId;
   final Value<String?> nombreTemporal;
   final Value<int> cantidad;
+  final Value<int?> compraId;
+  final Value<int?> costoLogistica;
+  final Value<int?> cantidadComprada;
+  final Value<bool> comprado;
   final Value<int?> precioUnitario;
   final Value<int?> costoUnitario;
   const EncargoDetalleCompanion({
@@ -2545,6 +3258,10 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
     this.productoId = const Value.absent(),
     this.nombreTemporal = const Value.absent(),
     this.cantidad = const Value.absent(),
+    this.compraId = const Value.absent(),
+    this.costoLogistica = const Value.absent(),
+    this.cantidadComprada = const Value.absent(),
+    this.comprado = const Value.absent(),
     this.precioUnitario = const Value.absent(),
     this.costoUnitario = const Value.absent(),
   });
@@ -2554,6 +3271,10 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
     this.productoId = const Value.absent(),
     this.nombreTemporal = const Value.absent(),
     required int cantidad,
+    this.compraId = const Value.absent(),
+    this.costoLogistica = const Value.absent(),
+    this.cantidadComprada = const Value.absent(),
+    this.comprado = const Value.absent(),
     this.precioUnitario = const Value.absent(),
     this.costoUnitario = const Value.absent(),
   })  : encargoId = Value(encargoId),
@@ -2564,6 +3285,10 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
     Expression<int>? productoId,
     Expression<String>? nombreTemporal,
     Expression<int>? cantidad,
+    Expression<int>? compraId,
+    Expression<int>? costoLogistica,
+    Expression<int>? cantidadComprada,
+    Expression<bool>? comprado,
     Expression<int>? precioUnitario,
     Expression<int>? costoUnitario,
   }) {
@@ -2573,6 +3298,10 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
       if (productoId != null) 'producto_id': productoId,
       if (nombreTemporal != null) 'nombre_temporal': nombreTemporal,
       if (cantidad != null) 'cantidad': cantidad,
+      if (compraId != null) 'compra_id': compraId,
+      if (costoLogistica != null) 'costo_logistica': costoLogistica,
+      if (cantidadComprada != null) 'cantidad_comprada': cantidadComprada,
+      if (comprado != null) 'comprado': comprado,
       if (precioUnitario != null) 'precio_unitario': precioUnitario,
       if (costoUnitario != null) 'costo_unitario': costoUnitario,
     });
@@ -2584,6 +3313,10 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
       Value<int?>? productoId,
       Value<String?>? nombreTemporal,
       Value<int>? cantidad,
+      Value<int?>? compraId,
+      Value<int?>? costoLogistica,
+      Value<int?>? cantidadComprada,
+      Value<bool>? comprado,
       Value<int?>? precioUnitario,
       Value<int?>? costoUnitario}) {
     return EncargoDetalleCompanion(
@@ -2592,6 +3325,10 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
       productoId: productoId ?? this.productoId,
       nombreTemporal: nombreTemporal ?? this.nombreTemporal,
       cantidad: cantidad ?? this.cantidad,
+      compraId: compraId ?? this.compraId,
+      costoLogistica: costoLogistica ?? this.costoLogistica,
+      cantidadComprada: cantidadComprada ?? this.cantidadComprada,
+      comprado: comprado ?? this.comprado,
       precioUnitario: precioUnitario ?? this.precioUnitario,
       costoUnitario: costoUnitario ?? this.costoUnitario,
     );
@@ -2615,6 +3352,18 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
     if (cantidad.present) {
       map['cantidad'] = Variable<int>(cantidad.value);
     }
+    if (compraId.present) {
+      map['compra_id'] = Variable<int>(compraId.value);
+    }
+    if (costoLogistica.present) {
+      map['costo_logistica'] = Variable<int>(costoLogistica.value);
+    }
+    if (cantidadComprada.present) {
+      map['cantidad_comprada'] = Variable<int>(cantidadComprada.value);
+    }
+    if (comprado.present) {
+      map['comprado'] = Variable<bool>(comprado.value);
+    }
     if (precioUnitario.present) {
       map['precio_unitario'] = Variable<int>(precioUnitario.value);
     }
@@ -2632,6 +3381,10 @@ class EncargoDetalleCompanion extends UpdateCompanion<EncargoDetalleData> {
           ..write('productoId: $productoId, ')
           ..write('nombreTemporal: $nombreTemporal, ')
           ..write('cantidad: $cantidad, ')
+          ..write('compraId: $compraId, ')
+          ..write('costoLogistica: $costoLogistica, ')
+          ..write('cantidadComprada: $cantidadComprada, ')
+          ..write('comprado: $comprado, ')
           ..write('precioUnitario: $precioUnitario, ')
           ..write('costoUnitario: $costoUnitario')
           ..write(')'))
@@ -3286,6 +4039,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GastosTable gastos = $GastosTable(this);
   late final $ProductosTable productos = $ProductosTable(this);
   late final $EncargosTable encargos = $EncargosTable(this);
+  late final $ComprasTable compras = $ComprasTable(this);
   late final $EncargoDetalleTable encargoDetalle = $EncargoDetalleTable(this);
   late final $PagosTable pagos = $PagosTable(this);
   late final $PerfilUsuarioTable perfilUsuario = $PerfilUsuarioTable(this);
@@ -3300,6 +4054,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         gastos,
         productos,
         encargos,
+        compras,
         encargoDetalle,
         pagos,
         perfilUsuario
@@ -3874,6 +4629,7 @@ typedef $$ViajesTableCreateCompanionBuilder = ViajesCompanion Function({
   required String destino,
   Value<String?> observaciones,
   Value<bool> distribuido,
+  Value<int> montoDistribuido,
 });
 typedef $$ViajesTableUpdateCompanionBuilder = ViajesCompanion Function({
   Value<int> id,
@@ -3881,6 +4637,7 @@ typedef $$ViajesTableUpdateCompanionBuilder = ViajesCompanion Function({
   Value<String> destino,
   Value<String?> observaciones,
   Value<bool> distribuido,
+  Value<int> montoDistribuido,
 });
 
 final class $$ViajesTableReferences
@@ -3914,6 +4671,20 @@ final class $$ViajesTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$ComprasTable, List<Compra>> _comprasRefsTable(
+          _$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(db.compras,
+          aliasName: 'viajes__id__compras__viaje_id');
+
+  $$ComprasTableProcessedTableManager get comprasRefs {
+    final manager = $$ComprasTableTableManager($_db, $_db.compras)
+        .filter((f) => f.viajeId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_comprasRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$ViajesTableFilterComposer
@@ -3939,6 +4710,10 @@ class $$ViajesTableFilterComposer
 
   ColumnFilters<bool> get distribuido => $composableBuilder(
       column: $table.distribuido, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get montoDistribuido => $composableBuilder(
+      column: $table.montoDistribuido,
+      builder: (column) => ColumnFilters(column));
 
   Expression<bool> gastosRefs(
       Expression<bool> Function($$GastosTableFilterComposer f) f) {
@@ -3981,6 +4756,27 @@ class $$ViajesTableFilterComposer
             ));
     return f(composer);
   }
+
+  Expression<bool> comprasRefs(
+      Expression<bool> Function($$ComprasTableFilterComposer f) f) {
+    final $$ComprasTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.compras,
+        getReferencedColumn: (t) => t.viajeId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ComprasTableFilterComposer(
+              $db: $db,
+              $table: $db.compras,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$ViajesTableOrderingComposer
@@ -4007,6 +4803,10 @@ class $$ViajesTableOrderingComposer
 
   ColumnOrderings<bool> get distribuido => $composableBuilder(
       column: $table.distribuido, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get montoDistribuido => $composableBuilder(
+      column: $table.montoDistribuido,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$ViajesTableAnnotationComposer
@@ -4032,6 +4832,9 @@ class $$ViajesTableAnnotationComposer
 
   GeneratedColumn<bool> get distribuido => $composableBuilder(
       column: $table.distribuido, builder: (column) => column);
+
+  GeneratedColumn<int> get montoDistribuido => $composableBuilder(
+      column: $table.montoDistribuido, builder: (column) => column);
 
   Expression<T> gastosRefs<T extends Object>(
       Expression<T> Function($$GastosTableAnnotationComposer a) f) {
@@ -4074,6 +4877,27 @@ class $$ViajesTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> comprasRefs<T extends Object>(
+      Expression<T> Function($$ComprasTableAnnotationComposer a) f) {
+    final $$ComprasTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.compras,
+        getReferencedColumn: (t) => t.viajeId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ComprasTableAnnotationComposer(
+              $db: $db,
+              $table: $db.compras,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$ViajesTableTableManager extends RootTableManager<
@@ -4087,7 +4911,8 @@ class $$ViajesTableTableManager extends RootTableManager<
     $$ViajesTableUpdateCompanionBuilder,
     (Viaje, $$ViajesTableReferences),
     Viaje,
-    PrefetchHooks Function({bool gastosRefs, bool productosRefs})> {
+    PrefetchHooks Function(
+        {bool gastosRefs, bool productosRefs, bool comprasRefs})> {
   $$ViajesTableTableManager(_$AppDatabase db, $ViajesTable table)
       : super(TableManagerState(
           db: db,
@@ -4104,6 +4929,7 @@ class $$ViajesTableTableManager extends RootTableManager<
             Value<String> destino = const Value.absent(),
             Value<String?> observaciones = const Value.absent(),
             Value<bool> distribuido = const Value.absent(),
+            Value<int> montoDistribuido = const Value.absent(),
           }) =>
               ViajesCompanion(
             id: id,
@@ -4111,6 +4937,7 @@ class $$ViajesTableTableManager extends RootTableManager<
             destino: destino,
             observaciones: observaciones,
             distribuido: distribuido,
+            montoDistribuido: montoDistribuido,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -4118,6 +4945,7 @@ class $$ViajesTableTableManager extends RootTableManager<
             required String destino,
             Value<String?> observaciones = const Value.absent(),
             Value<bool> distribuido = const Value.absent(),
+            Value<int> montoDistribuido = const Value.absent(),
           }) =>
               ViajesCompanion.insert(
             id: id,
@@ -4125,17 +4953,22 @@ class $$ViajesTableTableManager extends RootTableManager<
             destino: destino,
             observaciones: observaciones,
             distribuido: distribuido,
+            montoDistribuido: montoDistribuido,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>
                   (e.readTable(table), $$ViajesTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({gastosRefs = false, productosRefs = false}) {
+          prefetchHooksCallback: (
+              {gastosRefs = false,
+              productosRefs = false,
+              comprasRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (gastosRefs) db.gastos,
-                if (productosRefs) db.productos
+                if (productosRefs) db.productos,
+                if (comprasRefs) db.compras
               ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
@@ -4162,6 +4995,17 @@ class $$ViajesTableTableManager extends RootTableManager<
                         referencedItemsForCurrentItem: (item,
                                 referencedItems) =>
                             referencedItems.where((e) => e.viajeId == item.id),
+                        typedResults: items),
+                  if (comprasRefs)
+                    await $_getPrefetchedData<Viaje, $ViajesTable, Compra>(
+                        currentTable: table,
+                        referencedTable:
+                            $$ViajesTableReferences._comprasRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ViajesTableReferences(db, table, p0).comprasRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.viajeId == item.id),
                         typedResults: items)
                 ];
               },
@@ -4181,7 +5025,8 @@ typedef $$ViajesTableProcessedTableManager = ProcessedTableManager<
     $$ViajesTableUpdateCompanionBuilder,
     (Viaje, $$ViajesTableReferences),
     Viaje,
-    PrefetchHooks Function({bool gastosRefs, bool productosRefs})>;
+    PrefetchHooks Function(
+        {bool gastosRefs, bool productosRefs, bool comprasRefs})>;
 typedef $$GastosTableCreateCompanionBuilder = GastosCompanion Function({
   Value<int> id,
   required int viajeId,
@@ -4489,6 +5334,20 @@ final class $$ProductosTableReferences
         manager.$state.copyWith(prefetchedData: [item]));
   }
 
+  static MultiTypedResultKey<$ComprasTable, List<Compra>> _comprasRefsTable(
+          _$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(db.compras,
+          aliasName: 'productos__id__compras__producto_id');
+
+  $$ComprasTableProcessedTableManager get comprasRefs {
+    final manager = $$ComprasTableTableManager($_db, $_db.compras)
+        .filter((f) => f.productoId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_comprasRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
   static MultiTypedResultKey<$EncargoDetalleTable, List<EncargoDetalleData>>
       _encargoDetalleRefsTable(_$AppDatabase db) =>
           MultiTypedResultKey.fromTable(db.encargoDetalle,
@@ -4579,6 +5438,27 @@ class $$ProductosTableFilterComposer
                   $removeJoinBuilderFromRootComposer,
             ));
     return composer;
+  }
+
+  Expression<bool> comprasRefs(
+      Expression<bool> Function($$ComprasTableFilterComposer f) f) {
+    final $$ComprasTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.compras,
+        getReferencedColumn: (t) => t.productoId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ComprasTableFilterComposer(
+              $db: $db,
+              $table: $db.compras,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
   }
 
   Expression<bool> encargoDetalleRefs(
@@ -4759,6 +5639,27 @@ class $$ProductosTableAnnotationComposer
     return composer;
   }
 
+  Expression<T> comprasRefs<T extends Object>(
+      Expression<T> Function($$ComprasTableAnnotationComposer a) f) {
+    final $$ComprasTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.compras,
+        getReferencedColumn: (t) => t.productoId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ComprasTableAnnotationComposer(
+              $db: $db,
+              $table: $db.compras,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
   Expression<T> encargoDetalleRefs<T extends Object>(
       Expression<T> Function($$EncargoDetalleTableAnnotationComposer a) f) {
     final $$EncargoDetalleTableAnnotationComposer composer = $composerBuilder(
@@ -4793,7 +5694,10 @@ class $$ProductosTableTableManager extends RootTableManager<
     (Producto, $$ProductosTableReferences),
     Producto,
     PrefetchHooks Function(
-        {bool categoriaId, bool viajeId, bool encargoDetalleRefs})> {
+        {bool categoriaId,
+        bool viajeId,
+        bool comprasRefs,
+        bool encargoDetalleRefs})> {
   $$ProductosTableTableManager(_$AppDatabase db, $ProductosTable table)
       : super(TableManagerState(
           db: db,
@@ -4865,10 +5769,12 @@ class $$ProductosTableTableManager extends RootTableManager<
           prefetchHooksCallback: (
               {categoriaId = false,
               viajeId = false,
+              comprasRefs = false,
               encargoDetalleRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
+                if (comprasRefs) db.compras,
                 if (encargoDetalleRefs) db.encargoDetalle
               ],
               addJoins: <
@@ -4909,6 +5815,19 @@ class $$ProductosTableTableManager extends RootTableManager<
               },
               getPrefetchedDataCallback: (items) async {
                 return [
+                  if (comprasRefs)
+                    await $_getPrefetchedData<Producto, $ProductosTable,
+                            Compra>(
+                        currentTable: table,
+                        referencedTable:
+                            $$ProductosTableReferences._comprasRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ProductosTableReferences(db, table, p0)
+                                .comprasRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.productoId == item.id),
+                        typedResults: items),
                   if (encargoDetalleRefs)
                     await $_getPrefetchedData<Producto, $ProductosTable,
                             EncargoDetalleData>(
@@ -4941,12 +5860,16 @@ typedef $$ProductosTableProcessedTableManager = ProcessedTableManager<
     (Producto, $$ProductosTableReferences),
     Producto,
     PrefetchHooks Function(
-        {bool categoriaId, bool viajeId, bool encargoDetalleRefs})>;
+        {bool categoriaId,
+        bool viajeId,
+        bool comprasRefs,
+        bool encargoDetalleRefs})>;
 typedef $$EncargosTableCreateCompanionBuilder = EncargosCompanion Function({
   Value<int> id,
   Value<int?> clienteId,
   Value<int> correlativoCliente,
   required DateTime fecha,
+  Value<DateTime?> fechaEntregaReal,
   Value<DateTime?> fechaEntregaEstimada,
   required String estado,
   Value<String?> observaciones,
@@ -4958,6 +5881,7 @@ typedef $$EncargosTableUpdateCompanionBuilder = EncargosCompanion Function({
   Value<int?> clienteId,
   Value<int> correlativoCliente,
   Value<DateTime> fecha,
+  Value<DateTime?> fechaEntregaReal,
   Value<DateTime?> fechaEntregaEstimada,
   Value<String> estado,
   Value<String?> observaciones,
@@ -5030,6 +5954,10 @@ class $$EncargosTableFilterComposer
 
   ColumnFilters<DateTime> get fecha => $composableBuilder(
       column: $table.fecha, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get fechaEntregaReal => $composableBuilder(
+      column: $table.fechaEntregaReal,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get fechaEntregaEstimada => $composableBuilder(
       column: $table.fechaEntregaEstimada,
@@ -5129,6 +6057,10 @@ class $$EncargosTableOrderingComposer
   ColumnOrderings<DateTime> get fecha => $composableBuilder(
       column: $table.fecha, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get fechaEntregaReal => $composableBuilder(
+      column: $table.fechaEntregaReal,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get fechaEntregaEstimada => $composableBuilder(
       column: $table.fechaEntregaEstimada,
       builder: (column) => ColumnOrderings(column));
@@ -5184,6 +6116,9 @@ class $$EncargosTableAnnotationComposer
 
   GeneratedColumn<DateTime> get fecha =>
       $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaEntregaReal => $composableBuilder(
+      column: $table.fechaEntregaReal, builder: (column) => column);
 
   GeneratedColumn<DateTime> get fechaEntregaEstimada => $composableBuilder(
       column: $table.fechaEntregaEstimada, builder: (column) => column);
@@ -5291,6 +6226,7 @@ class $$EncargosTableTableManager extends RootTableManager<
             Value<int?> clienteId = const Value.absent(),
             Value<int> correlativoCliente = const Value.absent(),
             Value<DateTime> fecha = const Value.absent(),
+            Value<DateTime?> fechaEntregaReal = const Value.absent(),
             Value<DateTime?> fechaEntregaEstimada = const Value.absent(),
             Value<String> estado = const Value.absent(),
             Value<String?> observaciones = const Value.absent(),
@@ -5302,6 +6238,7 @@ class $$EncargosTableTableManager extends RootTableManager<
             clienteId: clienteId,
             correlativoCliente: correlativoCliente,
             fecha: fecha,
+            fechaEntregaReal: fechaEntregaReal,
             fechaEntregaEstimada: fechaEntregaEstimada,
             estado: estado,
             observaciones: observaciones,
@@ -5313,6 +6250,7 @@ class $$EncargosTableTableManager extends RootTableManager<
             Value<int?> clienteId = const Value.absent(),
             Value<int> correlativoCliente = const Value.absent(),
             required DateTime fecha,
+            Value<DateTime?> fechaEntregaReal = const Value.absent(),
             Value<DateTime?> fechaEntregaEstimada = const Value.absent(),
             required String estado,
             Value<String?> observaciones = const Value.absent(),
@@ -5324,6 +6262,7 @@ class $$EncargosTableTableManager extends RootTableManager<
             clienteId: clienteId,
             correlativoCliente: correlativoCliente,
             fecha: fecha,
+            fechaEntregaReal: fechaEntregaReal,
             fechaEntregaEstimada: fechaEntregaEstimada,
             estado: estado,
             observaciones: observaciones,
@@ -5416,6 +6355,485 @@ typedef $$EncargosTableProcessedTableManager = ProcessedTableManager<
     Encargo,
     PrefetchHooks Function(
         {bool clienteId, bool encargoDetalleRefs, bool pagosRefs})>;
+typedef $$ComprasTableCreateCompanionBuilder = ComprasCompanion Function({
+  Value<int> id,
+  required int viajeId,
+  required int productoId,
+  required String nombreProducto,
+  required DateTime fecha,
+  required int cantidad,
+  required int costoUnitario,
+  required int precioVenta,
+  Value<int> gastoAsignado,
+});
+typedef $$ComprasTableUpdateCompanionBuilder = ComprasCompanion Function({
+  Value<int> id,
+  Value<int> viajeId,
+  Value<int> productoId,
+  Value<String> nombreProducto,
+  Value<DateTime> fecha,
+  Value<int> cantidad,
+  Value<int> costoUnitario,
+  Value<int> precioVenta,
+  Value<int> gastoAsignado,
+});
+
+final class $$ComprasTableReferences
+    extends BaseReferences<_$AppDatabase, $ComprasTable, Compra> {
+  $$ComprasTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ViajesTable _viajeIdTable(_$AppDatabase db) =>
+      db.viajes.createAlias('compras__viaje_id__viajes__id');
+
+  $$ViajesTableProcessedTableManager get viajeId {
+    final $_column = $_itemColumn<int>('viaje_id')!;
+
+    final manager = $$ViajesTableTableManager($_db, $_db.viajes)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_viajeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $ProductosTable _productoIdTable(_$AppDatabase db) =>
+      db.productos.createAlias('compras__producto_id__productos__id');
+
+  $$ProductosTableProcessedTableManager get productoId {
+    final $_column = $_itemColumn<int>('producto_id')!;
+
+    final manager = $$ProductosTableTableManager($_db, $_db.productos)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_productoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static MultiTypedResultKey<$EncargoDetalleTable, List<EncargoDetalleData>>
+      _encargoDetalleRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.encargoDetalle,
+              aliasName: 'compras__id__encargo_detalle__compra_id');
+
+  $$EncargoDetalleTableProcessedTableManager get encargoDetalleRefs {
+    final manager = $$EncargoDetalleTableTableManager($_db, $_db.encargoDetalle)
+        .filter((f) => f.compraId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_encargoDetalleRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
+
+class $$ComprasTableFilterComposer
+    extends Composer<_$AppDatabase, $ComprasTable> {
+  $$ComprasTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nombreProducto => $composableBuilder(
+      column: $table.nombreProducto,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+      column: $table.fecha, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get cantidad => $composableBuilder(
+      column: $table.cantidad, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get costoUnitario => $composableBuilder(
+      column: $table.costoUnitario, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get precioVenta => $composableBuilder(
+      column: $table.precioVenta, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get gastoAsignado => $composableBuilder(
+      column: $table.gastoAsignado, builder: (column) => ColumnFilters(column));
+
+  $$ViajesTableFilterComposer get viajeId {
+    final $$ViajesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.viajeId,
+        referencedTable: $db.viajes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ViajesTableFilterComposer(
+              $db: $db,
+              $table: $db.viajes,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ProductosTableFilterComposer get productoId {
+    final $$ProductosTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productoId,
+        referencedTable: $db.productos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductosTableFilterComposer(
+              $db: $db,
+              $table: $db.productos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  Expression<bool> encargoDetalleRefs(
+      Expression<bool> Function($$EncargoDetalleTableFilterComposer f) f) {
+    final $$EncargoDetalleTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.encargoDetalle,
+        getReferencedColumn: (t) => t.compraId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$EncargoDetalleTableFilterComposer(
+              $db: $db,
+              $table: $db.encargoDetalle,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$ComprasTableOrderingComposer
+    extends Composer<_$AppDatabase, $ComprasTable> {
+  $$ComprasTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nombreProducto => $composableBuilder(
+      column: $table.nombreProducto,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+      column: $table.fecha, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get cantidad => $composableBuilder(
+      column: $table.cantidad, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get costoUnitario => $composableBuilder(
+      column: $table.costoUnitario,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get precioVenta => $composableBuilder(
+      column: $table.precioVenta, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get gastoAsignado => $composableBuilder(
+      column: $table.gastoAsignado,
+      builder: (column) => ColumnOrderings(column));
+
+  $$ViajesTableOrderingComposer get viajeId {
+    final $$ViajesTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.viajeId,
+        referencedTable: $db.viajes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ViajesTableOrderingComposer(
+              $db: $db,
+              $table: $db.viajes,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ProductosTableOrderingComposer get productoId {
+    final $$ProductosTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productoId,
+        referencedTable: $db.productos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductosTableOrderingComposer(
+              $db: $db,
+              $table: $db.productos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ComprasTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ComprasTable> {
+  $$ComprasTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get nombreProducto => $composableBuilder(
+      column: $table.nombreProducto, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<int> get cantidad =>
+      $composableBuilder(column: $table.cantidad, builder: (column) => column);
+
+  GeneratedColumn<int> get costoUnitario => $composableBuilder(
+      column: $table.costoUnitario, builder: (column) => column);
+
+  GeneratedColumn<int> get precioVenta => $composableBuilder(
+      column: $table.precioVenta, builder: (column) => column);
+
+  GeneratedColumn<int> get gastoAsignado => $composableBuilder(
+      column: $table.gastoAsignado, builder: (column) => column);
+
+  $$ViajesTableAnnotationComposer get viajeId {
+    final $$ViajesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.viajeId,
+        referencedTable: $db.viajes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ViajesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.viajes,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ProductosTableAnnotationComposer get productoId {
+    final $$ProductosTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.productoId,
+        referencedTable: $db.productos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ProductosTableAnnotationComposer(
+              $db: $db,
+              $table: $db.productos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  Expression<T> encargoDetalleRefs<T extends Object>(
+      Expression<T> Function($$EncargoDetalleTableAnnotationComposer a) f) {
+    final $$EncargoDetalleTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.encargoDetalle,
+        getReferencedColumn: (t) => t.compraId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$EncargoDetalleTableAnnotationComposer(
+              $db: $db,
+              $table: $db.encargoDetalle,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$ComprasTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ComprasTable,
+    Compra,
+    $$ComprasTableFilterComposer,
+    $$ComprasTableOrderingComposer,
+    $$ComprasTableAnnotationComposer,
+    $$ComprasTableCreateCompanionBuilder,
+    $$ComprasTableUpdateCompanionBuilder,
+    (Compra, $$ComprasTableReferences),
+    Compra,
+    PrefetchHooks Function(
+        {bool viajeId, bool productoId, bool encargoDetalleRefs})> {
+  $$ComprasTableTableManager(_$AppDatabase db, $ComprasTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ComprasTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ComprasTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ComprasTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> viajeId = const Value.absent(),
+            Value<int> productoId = const Value.absent(),
+            Value<String> nombreProducto = const Value.absent(),
+            Value<DateTime> fecha = const Value.absent(),
+            Value<int> cantidad = const Value.absent(),
+            Value<int> costoUnitario = const Value.absent(),
+            Value<int> precioVenta = const Value.absent(),
+            Value<int> gastoAsignado = const Value.absent(),
+          }) =>
+              ComprasCompanion(
+            id: id,
+            viajeId: viajeId,
+            productoId: productoId,
+            nombreProducto: nombreProducto,
+            fecha: fecha,
+            cantidad: cantidad,
+            costoUnitario: costoUnitario,
+            precioVenta: precioVenta,
+            gastoAsignado: gastoAsignado,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int viajeId,
+            required int productoId,
+            required String nombreProducto,
+            required DateTime fecha,
+            required int cantidad,
+            required int costoUnitario,
+            required int precioVenta,
+            Value<int> gastoAsignado = const Value.absent(),
+          }) =>
+              ComprasCompanion.insert(
+            id: id,
+            viajeId: viajeId,
+            productoId: productoId,
+            nombreProducto: nombreProducto,
+            fecha: fecha,
+            cantidad: cantidad,
+            costoUnitario: costoUnitario,
+            precioVenta: precioVenta,
+            gastoAsignado: gastoAsignado,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) =>
+                  (e.readTable(table), $$ComprasTableReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: (
+              {viajeId = false,
+              productoId = false,
+              encargoDetalleRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (encargoDetalleRefs) db.encargoDetalle
+              ],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (viajeId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.viajeId,
+                    referencedTable: $$ComprasTableReferences._viajeIdTable(db),
+                    referencedColumn:
+                        $$ComprasTableReferences._viajeIdTable(db).id,
+                  ) as T;
+                }
+                if (productoId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.productoId,
+                    referencedTable:
+                        $$ComprasTableReferences._productoIdTable(db),
+                    referencedColumn:
+                        $$ComprasTableReferences._productoIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (encargoDetalleRefs)
+                    await $_getPrefetchedData<Compra, $ComprasTable,
+                            EncargoDetalleData>(
+                        currentTable: table,
+                        referencedTable: $$ComprasTableReferences
+                            ._encargoDetalleRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ComprasTableReferences(db, table, p0)
+                                .encargoDetalleRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.compraId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$ComprasTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ComprasTable,
+    Compra,
+    $$ComprasTableFilterComposer,
+    $$ComprasTableOrderingComposer,
+    $$ComprasTableAnnotationComposer,
+    $$ComprasTableCreateCompanionBuilder,
+    $$ComprasTableUpdateCompanionBuilder,
+    (Compra, $$ComprasTableReferences),
+    Compra,
+    PrefetchHooks Function(
+        {bool viajeId, bool productoId, bool encargoDetalleRefs})>;
 typedef $$EncargoDetalleTableCreateCompanionBuilder = EncargoDetalleCompanion
     Function({
   Value<int> id,
@@ -5423,6 +6841,10 @@ typedef $$EncargoDetalleTableCreateCompanionBuilder = EncargoDetalleCompanion
   Value<int?> productoId,
   Value<String?> nombreTemporal,
   required int cantidad,
+  Value<int?> compraId,
+  Value<int?> costoLogistica,
+  Value<int?> cantidadComprada,
+  Value<bool> comprado,
   Value<int?> precioUnitario,
   Value<int?> costoUnitario,
 });
@@ -5433,6 +6855,10 @@ typedef $$EncargoDetalleTableUpdateCompanionBuilder = EncargoDetalleCompanion
   Value<int?> productoId,
   Value<String?> nombreTemporal,
   Value<int> cantidad,
+  Value<int?> compraId,
+  Value<int?> costoLogistica,
+  Value<int?> cantidadComprada,
+  Value<bool> comprado,
   Value<int?> precioUnitario,
   Value<int?> costoUnitario,
 });
@@ -5469,6 +6895,20 @@ final class $$EncargoDetalleTableReferences extends BaseReferences<
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: [item]));
   }
+
+  static $ComprasTable _compraIdTable(_$AppDatabase db) =>
+      db.compras.createAlias('encargo_detalle__compra_id__compras__id');
+
+  $$ComprasTableProcessedTableManager? get compraId {
+    final $_column = $_itemColumn<int>('compra_id');
+    if ($_column == null) return null;
+    final manager = $$ComprasTableTableManager($_db, $_db.compras)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_compraIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
 }
 
 class $$EncargoDetalleTableFilterComposer
@@ -5489,6 +6929,17 @@ class $$EncargoDetalleTableFilterComposer
 
   ColumnFilters<int> get cantidad => $composableBuilder(
       column: $table.cantidad, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get costoLogistica => $composableBuilder(
+      column: $table.costoLogistica,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get cantidadComprada => $composableBuilder(
+      column: $table.cantidadComprada,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get comprado => $composableBuilder(
+      column: $table.comprado, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get precioUnitario => $composableBuilder(
       column: $table.precioUnitario,
@@ -5536,6 +6987,26 @@ class $$EncargoDetalleTableFilterComposer
             ));
     return composer;
   }
+
+  $$ComprasTableFilterComposer get compraId {
+    final $$ComprasTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.compraId,
+        referencedTable: $db.compras,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ComprasTableFilterComposer(
+              $db: $db,
+              $table: $db.compras,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$EncargoDetalleTableOrderingComposer
@@ -5556,6 +7027,17 @@ class $$EncargoDetalleTableOrderingComposer
 
   ColumnOrderings<int> get cantidad => $composableBuilder(
       column: $table.cantidad, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get costoLogistica => $composableBuilder(
+      column: $table.costoLogistica,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get cantidadComprada => $composableBuilder(
+      column: $table.cantidadComprada,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get comprado => $composableBuilder(
+      column: $table.comprado, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get precioUnitario => $composableBuilder(
       column: $table.precioUnitario,
@@ -5604,6 +7086,26 @@ class $$EncargoDetalleTableOrderingComposer
             ));
     return composer;
   }
+
+  $$ComprasTableOrderingComposer get compraId {
+    final $$ComprasTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.compraId,
+        referencedTable: $db.compras,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ComprasTableOrderingComposer(
+              $db: $db,
+              $table: $db.compras,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$EncargoDetalleTableAnnotationComposer
@@ -5623,6 +7125,15 @@ class $$EncargoDetalleTableAnnotationComposer
 
   GeneratedColumn<int> get cantidad =>
       $composableBuilder(column: $table.cantidad, builder: (column) => column);
+
+  GeneratedColumn<int> get costoLogistica => $composableBuilder(
+      column: $table.costoLogistica, builder: (column) => column);
+
+  GeneratedColumn<int> get cantidadComprada => $composableBuilder(
+      column: $table.cantidadComprada, builder: (column) => column);
+
+  GeneratedColumn<bool> get comprado =>
+      $composableBuilder(column: $table.comprado, builder: (column) => column);
 
   GeneratedColumn<int> get precioUnitario => $composableBuilder(
       column: $table.precioUnitario, builder: (column) => column);
@@ -5669,6 +7180,26 @@ class $$EncargoDetalleTableAnnotationComposer
             ));
     return composer;
   }
+
+  $$ComprasTableAnnotationComposer get compraId {
+    final $$ComprasTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.compraId,
+        referencedTable: $db.compras,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ComprasTableAnnotationComposer(
+              $db: $db,
+              $table: $db.compras,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$EncargoDetalleTableTableManager extends RootTableManager<
@@ -5682,7 +7213,7 @@ class $$EncargoDetalleTableTableManager extends RootTableManager<
     $$EncargoDetalleTableUpdateCompanionBuilder,
     (EncargoDetalleData, $$EncargoDetalleTableReferences),
     EncargoDetalleData,
-    PrefetchHooks Function({bool encargoId, bool productoId})> {
+    PrefetchHooks Function({bool encargoId, bool productoId, bool compraId})> {
   $$EncargoDetalleTableTableManager(
       _$AppDatabase db, $EncargoDetalleTable table)
       : super(TableManagerState(
@@ -5700,6 +7231,10 @@ class $$EncargoDetalleTableTableManager extends RootTableManager<
             Value<int?> productoId = const Value.absent(),
             Value<String?> nombreTemporal = const Value.absent(),
             Value<int> cantidad = const Value.absent(),
+            Value<int?> compraId = const Value.absent(),
+            Value<int?> costoLogistica = const Value.absent(),
+            Value<int?> cantidadComprada = const Value.absent(),
+            Value<bool> comprado = const Value.absent(),
             Value<int?> precioUnitario = const Value.absent(),
             Value<int?> costoUnitario = const Value.absent(),
           }) =>
@@ -5709,6 +7244,10 @@ class $$EncargoDetalleTableTableManager extends RootTableManager<
             productoId: productoId,
             nombreTemporal: nombreTemporal,
             cantidad: cantidad,
+            compraId: compraId,
+            costoLogistica: costoLogistica,
+            cantidadComprada: cantidadComprada,
+            comprado: comprado,
             precioUnitario: precioUnitario,
             costoUnitario: costoUnitario,
           ),
@@ -5718,6 +7257,10 @@ class $$EncargoDetalleTableTableManager extends RootTableManager<
             Value<int?> productoId = const Value.absent(),
             Value<String?> nombreTemporal = const Value.absent(),
             required int cantidad,
+            Value<int?> compraId = const Value.absent(),
+            Value<int?> costoLogistica = const Value.absent(),
+            Value<int?> cantidadComprada = const Value.absent(),
+            Value<bool> comprado = const Value.absent(),
             Value<int?> precioUnitario = const Value.absent(),
             Value<int?> costoUnitario = const Value.absent(),
           }) =>
@@ -5727,6 +7270,10 @@ class $$EncargoDetalleTableTableManager extends RootTableManager<
             productoId: productoId,
             nombreTemporal: nombreTemporal,
             cantidad: cantidad,
+            compraId: compraId,
+            costoLogistica: costoLogistica,
+            cantidadComprada: cantidadComprada,
+            comprado: comprado,
             precioUnitario: precioUnitario,
             costoUnitario: costoUnitario,
           ),
@@ -5736,7 +7283,8 @@ class $$EncargoDetalleTableTableManager extends RootTableManager<
                     $$EncargoDetalleTableReferences(db, table, e)
                   ))
               .toList(),
-          prefetchHooksCallback: ({encargoId = false, productoId = false}) {
+          prefetchHooksCallback: (
+              {encargoId = false, productoId = false, compraId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -5773,6 +7321,16 @@ class $$EncargoDetalleTableTableManager extends RootTableManager<
                         $$EncargoDetalleTableReferences._productoIdTable(db).id,
                   ) as T;
                 }
+                if (compraId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.compraId,
+                    referencedTable:
+                        $$EncargoDetalleTableReferences._compraIdTable(db),
+                    referencedColumn:
+                        $$EncargoDetalleTableReferences._compraIdTable(db).id,
+                  ) as T;
+                }
 
                 return state;
               },
@@ -5795,7 +7353,7 @@ typedef $$EncargoDetalleTableProcessedTableManager = ProcessedTableManager<
     $$EncargoDetalleTableUpdateCompanionBuilder,
     (EncargoDetalleData, $$EncargoDetalleTableReferences),
     EncargoDetalleData,
-    PrefetchHooks Function({bool encargoId, bool productoId})>;
+    PrefetchHooks Function({bool encargoId, bool productoId, bool compraId})>;
 typedef $$PagosTableCreateCompanionBuilder = PagosCompanion Function({
   Value<int> id,
   required int clienteId,
@@ -6332,6 +7890,8 @@ class $AppDatabaseManager {
       $$ProductosTableTableManager(_db, _db.productos);
   $$EncargosTableTableManager get encargos =>
       $$EncargosTableTableManager(_db, _db.encargos);
+  $$ComprasTableTableManager get compras =>
+      $$ComprasTableTableManager(_db, _db.compras);
   $$EncargoDetalleTableTableManager get encargoDetalle =>
       $$EncargoDetalleTableTableManager(_db, _db.encargoDetalle);
   $$PagosTableTableManager get pagos =>

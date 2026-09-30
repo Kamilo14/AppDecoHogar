@@ -3,6 +3,7 @@ import 'package:app_deco_hogar/features/gastos/data/datasources/viaje_local_data
 import 'package:app_deco_hogar/features/productos/data/datasources/producto_local_datasource.dart';
 import 'package:app_deco_hogar/features/productos/domain/entities/producto_entity.dart' as domain;
 import 'package:drift/native.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

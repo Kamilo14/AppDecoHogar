@@ -13,7 +13,8 @@ import '../../../pagos/presentation/providers/pago_providers.dart';
 import '../../../productos/presentation/providers/producto_providers.dart';
 import '../../domain/usecases/get_reporte_deudas_usecase.dart';
 import '../../domain/usecases/get_reporte_ganancias_usecase.dart';
-import '../../domain/usecases/get_reporte_ventas_usecase.dart';
+import 'reporte_ventas_detalle.dart';
+import '../../domain/usecases/periodo_reporte.dart';
 import '../../domain/usecases/get_top_productos_vendidos_usecase.dart';
 import '../../domain/usecases/get_ventas_por_dia_mes_usecase.dart';
 
@@ -24,7 +25,8 @@ class ReportesScreen extends ConsumerStatefulWidget {
   ConsumerState<ReportesScreen> createState() => _ReportesScreenState();
 }
 
-class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTickerProviderStateMixin {
+class _ReportesScreenState extends ConsumerState<ReportesScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _periodoSeleccionado = 'Mes';
 
@@ -47,12 +49,13 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTick
     final pagosAsync = ref.watch(pagosStreamProvider);
     final productosAsync = ref.watch(productosStreamProvider);
     final viajesAsync = ref.watch(viajesStreamProvider);
+    final stockLibre = ref.watch(stockLibreProvider);
 
-    final bool isLoading = clientesAsync.isLoading || 
-                         encargosAsync.isLoading || 
-                         pagosAsync.isLoading || 
-                         productosAsync.isLoading || 
-                         viajesAsync.isLoading;
+    final bool isLoading = clientesAsync.isLoading ||
+        encargosAsync.isLoading ||
+        pagosAsync.isLoading ||
+        productosAsync.isLoading ||
+        viajesAsync.isLoading;
 
     if (isLoading) {
       return Scaffold(
@@ -68,15 +71,28 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTick
     final viajes = viajesAsync.asData?.value ?? [];
 
     final deudas = GetReporteDeudasUseCase().call(clientes, encargos, pagos);
-    final ganancias = GetReporteGananciasUseCase().call(productos, viajes, encargos);
+    final ahora = DateTime.now();
+    final periodo = PeriodoReporte(_periodoSeleccionado, ahora);
+    bool contiene(DateTime f) => _periodoSeleccionado == 'Semana'
+        ? !f.isBefore(DateTime(ahora.year, ahora.month, ahora.day - 6)) &&
+            f.isBefore(DateTime(ahora.year, ahora.month, ahora.day + 1))
+        : periodo.contiene(f);
+    final encargosPeriodo =
+        encargos.where((e) => contiene(e.fechaVenta)).toList();
+    final ganancias = GetReporteGananciasUseCase().call(productos,
+        viajes.where((v) => contiene(v.fecha)).toList(), encargosPeriodo);
     final totalRecuperado = pagos.fold<int>(0, (sum, pago) => sum + pago.monto);
 
-    final ventasPorPeriodo = GetVentasPorDiaMesUseCase().call(encargos, _periodoSeleccionado);
+    final ventasPorPeriodo =
+        GetVentasPorDiaMesUseCase().call(encargos, _periodoSeleccionado);
     final labels = ventasPorPeriodo.keys.toList();
     final values = ventasPorPeriodo.values.toList();
-    
-    final maxVenta = values.isEmpty ? 0 : values.reduce((curr, next) => curr > next ? curr : next);
-    final chartMaxY = (maxVenta == 0 || !maxVenta.isFinite) ? 1000.0 : maxVenta * 1.2;
+
+    final maxVenta = values.isEmpty
+        ? 0
+        : values.reduce((curr, next) => curr > next ? curr : next);
+    final chartMaxY =
+        (maxVenta == 0 || !maxVenta.isFinite) ? 1000.0 : maxVenta * 1.2;
 
     final barGroups = List.generate(labels.length, (i) {
       final double val = values[i].toDouble();
@@ -92,13 +108,15 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTick
         ],
       );
     });
-    
-    final topProductos = GetTopProductosVendidosUseCase().call(encargos, productos);
+
+    final topProductos =
+        GetTopProductosVendidosUseCase().call(encargosPeriodo, productos);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Reportes de Gestión', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+        title: Text('Reportes de Gestión',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.background,
         elevation: 0,
         foregroundColor: AppColors.textPrimary,
@@ -130,7 +148,8 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTick
                         backgroundColor: AppColors.surface,
                         selectedBackgroundColor: AppColors.primary,
                         selectedForegroundColor: Colors.white,
-                        textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+                        textStyle: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w600, fontSize: 13),
                       ),
                       segments: const [
                         ButtonSegment(value: 'Día', label: Text('Hoy')),
@@ -139,7 +158,8 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTick
                       ],
                       selected: {_periodoSeleccionado},
                       onSelectionChanged: (Set<String> newSelection) {
-                        setState(() => _periodoSeleccionado = newSelection.first);
+                        setState(
+                            () => _periodoSeleccionado = newSelection.first);
                       },
                     ),
                     const SizedBox(height: 24),
@@ -167,114 +187,144 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTick
                       ],
                     ),
                     const SizedBox(height: 32),
-                    Text('Rendimiento de Ventas', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
+                    Text('Rendimiento de Ventas',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            color: AppColors.textPrimary)),
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
+                        border: Border.all(
+                            color: AppColors.outline.withValues(alpha: 0.5)),
                       ),
                       child: SizedBox(
                         height: 200,
-                        child: values.every((v) => v == 0) 
-                          ? const Center(child: Text('Sin ventas entregadas aún', style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12)))
-                          : BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment.spaceAround,
-                                maxY: chartMaxY,
-                                barTouchData: BarTouchData(enabled: true),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        final idx = value.toInt();
-                                        if (idx >= 0 && idx < labels.length) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(top: 8),
-                                            child: Text(labels[idx], style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-                                          );
-                                        }
-                                        return const Text('');
-                                      },
+                        child: values.every((v) => v == 0)
+                            ? const Center(
+                                child: Text('Sin ventas entregadas aún',
+                                    style: TextStyle(
+                                        fontStyle: FontStyle.italic,
+                                        fontSize: 12)))
+                            : BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  maxY: chartMaxY,
+                                  barTouchData: BarTouchData(enabled: true),
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        getTitlesWidget: (value, meta) {
+                                          final idx = value.toInt();
+                                          if (idx >= 0 && idx < labels.length) {
+                                            return Padding(
+                                              padding:
+                                                  const EdgeInsets.only(top: 8),
+                                              child: Text(labels[idx],
+                                                  style: GoogleFonts.outfit(
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: AppColors
+                                                          .textSecondary)),
+                                            );
+                                          }
+                                          return const Text('');
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 40,
-                                      getTitlesWidget: (value, meta) {
-                                        if (!value.isFinite || value == 0) return const Text('');
-                                        return Text(formatCurrencyClp(value.toInt(), compact: true), style: GoogleFonts.outfit(fontSize: 9, color: AppColors.textSecondary));
-                                      },
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 40,
+                                        getTitlesWidget: (value, meta) {
+                                          if (!value.isFinite || value == 0)
+                                            return const Text('');
+                                          return Text(
+                                              formatCurrencyClp(value.toInt(),
+                                                  compact: true),
+                                              style: GoogleFonts.outfit(
+                                                  fontSize: 9,
+                                                  color:
+                                                      AppColors.textSecondary));
+                                        },
+                                      ),
                                     ),
+                                    topTitles: const AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
+                                    rightTitles: const AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
                                   ),
-                                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  gridData: FlGridData(
+                                      show: true,
+                                      drawVerticalLine: false,
+                                      getDrawingHorizontalLine: (value) =>
+                                          FlLine(
+                                              color: AppColors.outline,
+                                              strokeWidth: 1)),
+                                  borderData: FlBorderData(show: false),
+                                  barGroups: barGroups,
                                 ),
-                                gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: AppColors.outline, strokeWidth: 1)),
-                                borderData: FlBorderData(show: false),
-                                barGroups: barGroups,
                               ),
-                            ),
                       ),
                     ),
                     const SizedBox(height: 32),
-                    Text('Top productos más vendidos', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
+                    Text('Top productos más vendidos',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            color: AppColors.textPrimary)),
                     const SizedBox(height: 16),
                     Container(
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
+                        border: Border.all(
+                            color: AppColors.outline.withValues(alpha: 0.5)),
                       ),
                       child: topProductos.isEmpty
                           ? const Padding(
                               padding: EdgeInsets.symmetric(vertical: 32),
-                              child: Center(child: Text('Sin ventas registradas')),
+                              child:
+                                  Center(child: Text('Sin ventas registradas')),
                             )
                           : Column(
                               children: topProductos.map((item) {
                                 return ListTile(
                                   leading: CircleAvatar(
-                                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                                    child: const Icon(Icons.star_rounded, color: AppColors.primary, size: 20),
+                                    backgroundColor: AppColors.primary
+                                        .withValues(alpha: 0.1),
+                                    child: const Icon(Icons.star_rounded,
+                                        color: AppColors.primary, size: 20),
                                   ),
-                                  title: Text(item.nombre, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary)),
-                                  subtitle: Text('${item.unidades} unidades', style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textSecondary)),
-                                  trailing: Text(formatCurrencyClp(item.montoTotal), style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                                  title: Text(item.nombre,
+                                      style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: AppColors.textPrimary)),
+                                  subtitle: Text('${item.unidades} unidades',
+                                      style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary)),
+                                  trailing: Text(
+                                      formatCurrencyClp(item.montoTotal),
+                                      style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.textPrimary)),
                                 );
                               }).toList(),
                             ),
                     ),
                   ],
                 ),
-                // Tab Ventas
-                ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
-                      ),
-                      child: Column(
-                        children: [
-                          WarmInfoRow(label: 'Total de Ventas', value: formatCurrencyClp(ganancias.totalVendido)),
-                          const Divider(height: 32, color: AppColors.outline),
-                          WarmInfoRow(label: 'Costo Mercaderia Vendida', value: formatCurrencyClp(ganancias.costoMercaderiaVendida)),
-                          const Divider(height: 32, color: AppColors.outline),
-                          WarmInfoRow(label: 'Ganancia Bruta', value: formatCurrencyClp(ganancias.gananciaNeta), isBoldValue: true),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
+                const ReporteVentasDetalle(),
                 // Tab Deudas
                 ListView(
                   padding: const EdgeInsets.all(24),
@@ -284,35 +334,50 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTick
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
+                        border: Border.all(
+                            color: AppColors.outline.withValues(alpha: 0.5)),
                       ),
                       child: Column(
                         children: [
-                          WarmInfoRow(label: 'Total por Cobrar', value: formatCurrencyClp(deudas.fold<int>(0, (sum, d) => sum + d.deuda))),
+                          WarmInfoRow(
+                              label: 'Total por Cobrar',
+                              value: formatCurrencyClp(deudas.fold<int>(
+                                  0, (sum, d) => sum + d.deuda))),
                           const Divider(height: 32, color: AppColors.outline),
-                          WarmInfoRow(label: 'Total Recuperado', value: formatCurrencyClp(totalRecuperado)),
+                          WarmInfoRow(
+                              label: 'Total Recuperado',
+                              value: formatCurrencyClp(totalRecuperado)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 24),
                     if (deudas.isEmpty)
-                      const Center(child: Padding(
+                      const Center(
+                          child: Padding(
                         padding: EdgeInsets.all(40.0),
                         child: Text('No hay deudas pendientes'),
                       ))
                     else
                       ...deudas.map((item) => Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
-                        ),
-                        child: ListTile(
-                          title: Text(item.cliente.nombre, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                          trailing: Text(formatCurrencyClp(item.deuda), style: GoogleFonts.outfit(color: AppColors.error, fontWeight: FontWeight.w800)),
-                        ),
-                      )),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color:
+                                      AppColors.outline.withValues(alpha: 0.5)),
+                            ),
+                            child: ListTile(
+                              title: Text(item.cliente.nombre,
+                                  style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary)),
+                              trailing: Text(formatCurrencyClp(item.deuda),
+                                  style: GoogleFonts.outfit(
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.w800)),
+                            ),
+                          )),
                   ],
                 ),
                 // Tab Inventario
@@ -324,39 +389,73 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen> with SingleTick
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
+                        border: Border.all(
+                            color: AppColors.outline.withValues(alpha: 0.5)),
                       ),
                       child: Column(
                         children: [
-                          WarmInfoRow(label: 'Valor Invertido en Stock', value: formatCurrencyClp(ganancias.totalInvertidoEnStock)),
+                          WarmInfoRow(
+                              label: 'Valor Invertido en Stock',
+                              value: formatCurrencyClp(
+                                  ganancias.totalInvertidoEnStock)),
                           const Divider(height: 32, color: AppColors.outline),
-                          WarmInfoRow(label: 'Variedad de Productos', value: '${productos.where((p) => p.activo).length} items'),
+                          WarmInfoRow(
+                              label: 'Variedad de Productos',
+                              value:
+                                  '${productos.where((p) => p.activo).length} items'),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
-                    Text('Listado de Existencias', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
+                    Text('Listado de Existencias',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            color: AppColors.textPrimary)),
                     const SizedBox(height: 16),
-                    ...productos.where((p) => p.activo && p.cantidadDisponible > 0).map((p) => Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
-                      ),
-                      child: ListTile(
-                        title: Text(p.nombre, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                        subtitle: Text('Inversión: ${formatCurrencyClp(p.precioCompra ?? 0)}', style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textSecondary)),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('${p.cantidadDisponible} un.', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: AppColors.secondary)),
-                            Text('Total: ${formatCurrencyClp((p.precioCompra ?? 0) * p.cantidadDisponible)}', style: GoogleFonts.outfit(fontSize: 10, color: AppColors.textSecondary)),
-                          ],
-                        ),
-                      ),
-                    )),
+                    ...productos
+                        .where((p) => p.activo && p.cantidadDisponible > 0)
+                        .map((p) => Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                    color: AppColors.outline
+                                        .withValues(alpha: 0.5)),
+                              ),
+                              child: ListTile(
+                                title: Text(p.nombre,
+                                    style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary)),
+                                subtitle: Text(
+                                    'Inversión: ${formatCurrencyClp(p.precioCompra ?? 0)}',
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary)),
+                                trailing: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text('${stockLibre[p.id] ?? 0} disponibles',
+                                        style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.secondary)),
+                                    Text(
+                                        '${p.cantidadDisponible - (stockLibre[p.id] ?? 0)} reservadas',
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            color: AppColors.textSecondary)),
+                                    Text(
+                                        'Total: ${formatCurrencyClp((p.precioCompra ?? 0) * p.cantidadDisponible)}',
+                                        style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            color: AppColors.textSecondary)),
+                                  ],
+                                ),
+                              ),
+                            )),
                   ],
                 ),
               ],

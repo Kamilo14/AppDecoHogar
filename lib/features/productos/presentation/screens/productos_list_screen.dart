@@ -20,6 +20,7 @@ class ProductosListScreen extends ConsumerWidget {
     final query = ref.watch(productoSearchProvider);
     final categoriaId = ref.watch(productoCategoriaFiltroProvider);
     final productosAsync = ref.watch(productosFiltradosProvider);
+    final stockLibre = ref.watch(stockLibreProvider);
     final categoriasAsync = ref.watch(categoriasStreamProvider);
     final categorias = categoriasAsync.asData?.value ?? const <Categoria>[];
 
@@ -51,11 +52,15 @@ class ProductosListScreen extends ConsumerWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.outline),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2))
                         ],
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.category_rounded, color: AppColors.textPrimary, size: 22),
+                        icon: const Icon(Icons.category_rounded,
+                            color: AppColors.textPrimary, size: 22),
                         onPressed: () => _showCategoriasManager(context, ref),
                       ),
                     ),
@@ -68,16 +73,23 @@ class ProductosListScreen extends ConsumerWidget {
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4))
                     ],
                   ),
                   child: TextField(
-                    onChanged: (v) => ref.read(productoSearchProvider.notifier).state = v,
+                    onChanged: (v) =>
+                        ref.read(productoSearchProvider.notifier).state = v,
                     style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
                     decoration: InputDecoration(
                       hintText: 'Buscar productos...',
-                      hintStyle: GoogleFonts.outfit(color: AppColors.textSecondary.withValues(alpha: 0.6)),
-                      prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary, size: 22),
+                      hintStyle: GoogleFonts.outfit(
+                          color:
+                              AppColors.textSecondary.withValues(alpha: 0.6)),
+                      prefixIcon: const Icon(Icons.search_rounded,
+                          color: AppColors.primary, size: 22),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -93,7 +105,8 @@ class ProductosListScreen extends ConsumerWidget {
                     scrollDirection: Axis.horizontal,
                     children: [
                       _buildFilterChip(ref, 'Todos', null, categoriaId == null),
-                      ...categorias.map((cat) => _buildFilterChip(ref, cat.nombre, cat.id, categoriaId == cat.id)),
+                      ...categorias.map((cat) => _buildFilterChip(
+                          ref, cat.nombre, cat.id, categoriaId == cat.id)),
                     ],
                   ),
                 ),
@@ -102,8 +115,15 @@ class ProductosListScreen extends ConsumerWidget {
                   _buildEmptyState()
                 else
                   ...productos.map((producto) {
-                    final catNombre = categorias.firstWhere((c) => c.id == producto.categoriaId, orElse: () => const Categoria(nombre: 'Sin categoría')).nombre;
-                    return _ProductoTile(producto: producto, categoriaNombre: catNombre);
+                    final catNombre = categorias
+                        .firstWhere((c) => c.id == producto.categoriaId,
+                            orElse: () =>
+                                const Categoria(nombre: 'Sin categoría'))
+                        .nombre;
+                    return _ProductoTile(
+                        producto: producto,
+                        categoriaNombre: catNombre,
+                        disponibles: stockLibre[producto.id] ?? 0);
                   }),
                 const SizedBox(height: 80),
               ],
@@ -125,14 +145,16 @@ class ProductosListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilterChip(WidgetRef ref, String label, int? id, bool isSelected) {
+  Widget _buildFilterChip(
+      WidgetRef ref, String label, int? id, bool isSelected) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         label: Text(label),
         selected: isSelected,
         onSelected: (selected) {
-          if (selected) ref.read(productoCategoriaFiltroProvider.notifier).state = id;
+          if (selected)
+            ref.read(productoCategoriaFiltroProvider.notifier).state = id;
         },
         backgroundColor: AppColors.surface,
         selectedColor: AppColors.primary.withValues(alpha: 0.1),
@@ -142,7 +164,10 @@ class ProductosListScreen extends ConsumerWidget {
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: isSelected ? AppColors.primary.withValues(alpha: 0.5) : AppColors.outline),
+          side: BorderSide(
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.5)
+                  : AppColors.outline),
         ),
       ),
     );
@@ -159,9 +184,14 @@ class ProductosListScreen extends ConsumerWidget {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.inventory_2_outlined, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.3)),
+            Icon(Icons.inventory_2_outlined,
+                size: 48,
+                color: AppColors.textSecondary.withValues(alpha: 0.3)),
             const SizedBox(height: 16),
-            Text('No hay productos disponibles', style: GoogleFonts.outfit(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+            Text('No hay productos disponibles',
+                style: GoogleFonts.outfit(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -172,17 +202,22 @@ class ProductosListScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => const CategoriaFormDialog(),
     );
   }
 }
 
 class _ProductoTile extends StatelessWidget {
+  final int disponibles;
   final Producto producto;
   final String categoriaNombre;
 
-  const _ProductoTile({required this.producto, required this.categoriaNombre});
+  const _ProductoTile(
+      {required this.producto,
+      required this.categoriaNombre,
+      required this.disponibles});
 
   @override
   Widget build(BuildContext context) {
@@ -214,9 +249,12 @@ class _ProductoTile extends StatelessWidget {
                     width: 64,
                     height: 64,
                     color: AppColors.background,
-                    child: producto.fotoPath != null && producto.fotoPath!.isNotEmpty
+                    child: producto.fotoPath != null &&
+                            producto.fotoPath!.isNotEmpty
                         ? Image.network(producto.fotoPath!, fit: BoxFit.cover)
-                        : Icon(Icons.image_outlined, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                        : Icon(Icons.image_outlined,
+                            color:
+                                AppColors.textSecondary.withValues(alpha: 0.5)),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -224,16 +262,31 @@ class _ProductoTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(producto.nombre, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary)),
-                      Text(categoriaNombre, style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textSecondary)),
+                      Text(producto.nombre,
+                          style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: AppColors.textPrimary)),
+                      Text(categoriaNombre,
+                          style: GoogleFonts.outfit(
+                              fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(formatCurrencyClp(producto.precioVenta ?? 0), style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.primary)),
-                    Text('Stock: ${producto.cantidadDisponible}', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                    Text(formatCurrencyClp(producto.precioVenta ?? 0),
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: AppColors.primary)),
+                    Text(
+                        'Disponibles: $disponibles · Reservados: ${producto.cantidadDisponible - disponibles}',
+                        style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary)),
                   ],
                 ),
               ],

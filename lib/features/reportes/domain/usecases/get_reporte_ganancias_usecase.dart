@@ -8,6 +8,8 @@ class ReporteGanancias {
   final int costoMercaderiaVendida;
   final int gastosViaje;
   final int gananciaNeta;
+  final int gastosNoDistribuidos;
+  int get gananciaBruta => totalVendido - costoMercaderiaVendida;
 
   const ReporteGanancias({
     required this.totalInvertidoEnStock,
@@ -15,20 +17,24 @@ class ReporteGanancias {
     required this.costoMercaderiaVendida,
     required this.gastosViaje,
     required this.gananciaNeta,
+    this.gastosNoDistribuidos = 0,
   });
 }
 
 class GetReporteGananciasUseCase {
-  ReporteGanancias call(List<Producto> productos, List<Viaje> viajes, List<Encargo> encargos) {
+  ReporteGanancias call(
+      List<Producto> productos, List<Viaje> viajes, List<Encargo> encargos) {
     // 1. Inversión en stock actual (Tratamos null como 0)
-    final totalInvertidoEnStock = productos.where((p) => p.activo).fold(0, (sum, p) {
+    final totalInvertidoEnStock =
+        productos.where((p) => p.activo).fold(0, (sum, p) {
       final int costo = p.precioCompra ?? 0;
       return sum + (costo * p.cantidadDisponible);
     });
 
     // 2. Ventas totales (solo Entregados/Finalizados)
     final ventasRealizadas = encargos
-        .where((e) => e.activo && (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
+        .where((e) =>
+            e.activo && (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
         .toList();
 
     int totalVendido = 0;
@@ -38,19 +44,22 @@ class GetReporteGananciasUseCase {
     for (final venta in ventasRealizadas) {
       totalVendido += venta.total;
       for (final detalle in venta.detalles) {
-        final prod = productos.where((p) => p.id == detalle.productoId).firstOrNull;
-        
+        final prod =
+            productos.where((p) => p.id == detalle.productoId).firstOrNull;
+
         // Usamos el costo histórico si existe, si no el actual (tratando null como 0)
         final int costoBase = detalle.costoUnitario ?? prod?.precioCompra ?? 0;
-        final int comision = prod?.comisionViaje ?? 0;
-        final int costoRealUnitario = costoBase + comision;
-        
-        costoMercaderiaVendida += (costoRealUnitario * detalle.cantidad);
-        totalGastosLogisticaVentas += (comision * detalle.cantidad);
+        final logistica = detalle.costoLogistica ??
+            (prod?.comisionViaje ?? 0) * detalle.cantidad;
+        costoMercaderiaVendida += costoBase * detalle.cantidad + logistica;
+        totalGastosLogisticaVentas += logistica;
       }
     }
 
-    final gananciaNeta = totalVendido - costoMercaderiaVendida;
+    final gastosSeparados =
+        viajes.fold<int>(0, (s, v) => s + v.gastoSinDistribuir);
+    final gananciaNeta =
+        totalVendido - costoMercaderiaVendida - gastosSeparados;
 
     return ReporteGanancias(
       totalInvertidoEnStock: totalInvertidoEnStock,
@@ -58,6 +67,7 @@ class GetReporteGananciasUseCase {
       costoMercaderiaVendida: costoMercaderiaVendida,
       gastosViaje: totalGastosLogisticaVentas,
       gananciaNeta: gananciaNeta,
+      gastosNoDistribuidos: gastosSeparados,
     );
   }
 }

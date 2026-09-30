@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/core_providers.dart';
+import '../../../../core/database/database.dart' as db;
+import '../../data/datasources/compra_local_datasource.dart';
 import '../../data/datasources/viaje_local_datasource.dart';
 import '../../data/repositories/viaje_repository_impl.dart';
 import '../../domain/entities/viaje_entity.dart';
@@ -13,6 +15,10 @@ import '../../domain/usecases/save_viaje_usecase.dart';
 final viajeDataSourceProvider = Provider<ViajeLocalDataSource>((ref) {
   return ViajeLocalDataSource(ref.watch(databaseProvider));
 });
+final compraDataSourceProvider = Provider<CompraLocalDataSource>(
+    (ref) => CompraLocalDataSource(ref.watch(databaseProvider)));
+final comprasStreamProvider = StreamProvider<List<db.Compra>>(
+    (ref) => ref.watch(compraDataSourceProvider).watchCompras());
 
 final viajeRepositoryProvider = Provider<ViajeRepository>((ref) {
   return ViajeRepositoryImpl(ref.watch(viajeDataSourceProvider));
@@ -30,7 +36,8 @@ final agregarGastoUseCaseProvider = Provider<AgregarGastoUseCase>((ref) {
   return AgregarGastoUseCase(ref.watch(viajeRepositoryProvider));
 });
 
-final distribuirGastosUseCaseProvider = Provider<DistribuirGastosUseCase>((ref) {
+final distribuirGastosUseCaseProvider =
+    Provider<DistribuirGastosUseCase>((ref) {
   return DistribuirGastosUseCase(ref.watch(viajeRepositoryProvider));
 });
 

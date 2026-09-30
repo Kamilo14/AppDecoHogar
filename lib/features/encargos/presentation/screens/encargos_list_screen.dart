@@ -10,6 +10,8 @@ import '../../../clientes/domain/entities/cliente_entity.dart';
 import '../../../clientes/presentation/providers/cliente_providers.dart';
 import '../providers/encargo_providers.dart';
 import '../widgets/encargo_form_screen.dart';
+import '../../domain/entities/encargo_entity.dart';
+import '../../../productos/presentation/providers/producto_providers.dart';
 import 'encargo_detail_screen.dart';
 
 class EncargosListScreen extends ConsumerStatefulWidget {
@@ -25,7 +27,8 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
   @override
   Widget build(BuildContext context) {
     final encargosAsync = ref.watch(encargosStreamProvider);
-    final clientes = ref.watch(clientesStreamProvider).asData?.value ?? const [];
+    final clientes =
+        ref.watch(clientesStreamProvider).asData?.value ?? const [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -36,7 +39,8 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
           data: (encargos) {
             final filtrados = encargos.where((e) {
               if (_filtroEstado == null) return e.activo;
-              return e.activo && e.estado.toUpperCase() == _filtroEstado!.toUpperCase();
+              return e.activo &&
+                  e.estado.toUpperCase() == _filtroEstado!.toUpperCase();
             }).toList();
 
             return ListView(
@@ -60,11 +64,15 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.outline),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2))
                         ],
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.tune_rounded, color: AppColors.textPrimary, size: 22),
+                        icon: const Icon(Icons.tune_rounded,
+                            color: AppColors.textPrimary, size: 22),
                         onPressed: () {},
                       ),
                     ),
@@ -91,9 +99,12 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
                   ...filtrados.map((encargo) {
                     final cliente = clientes.firstWhere(
                       (c) => c.id == encargo.clienteId,
-                      orElse: () => Cliente(nombre: 'Cliente Desconocido', fechaRegistro: DateTime.now()),
+                      orElse: () => Cliente(
+                          nombre: 'Cliente Desconocido',
+                          fechaRegistro: DateTime.now()),
                     );
-                    return _EncargoCard(encargo: encargo, clienteNombre: cliente.nombre);
+                    return _EncargoCard(
+                        encargo: encargo, clienteNombre: cliente.nombre);
                   }),
               ],
             );
@@ -134,7 +145,10 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: isSelected ? AppColors.secondary.withValues(alpha: 0.5) : AppColors.outline),
+          side: BorderSide(
+              color: isSelected
+                  ? AppColors.secondary.withValues(alpha: 0.5)
+                  : AppColors.outline),
         ),
       ),
     );
@@ -151,11 +165,14 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.assignment_late_outlined, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.3)),
+            Icon(Icons.assignment_late_outlined,
+                size: 48,
+                color: AppColors.textSecondary.withValues(alpha: 0.3)),
             const SizedBox(height: 16),
             Text(
               'No hay encargos en este estado',
-              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+              style: GoogleFonts.outfit(
+                  color: AppColors.textSecondary, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -164,14 +181,15 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
   }
 }
 
-class _EncargoCard extends StatelessWidget {
-  final dynamic encargo;
+class _EncargoCard extends ConsumerWidget {
+  final Encargo encargo;
   final String clienteNombre;
 
   const _EncargoCard({required this.encargo, required this.clienteNombre});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final productos = ref.watch(productosStreamProvider).asData?.value ?? [];
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -179,7 +197,10 @@ class _EncargoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
         ],
       ),
       child: Material(
@@ -228,6 +249,28 @@ class _EncargoCard extends StatelessWidget {
                     color: AppColors.textPrimary,
                   ),
                 ),
+                const SizedBox(height: 12),
+                ...encargo.detalles.map((d) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Row(children: [
+                        Icon(
+                            d.comprado
+                                ? Icons.check_box
+                                : Icons.check_box_outline_blank,
+                            size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                            child: Text(d.nombreTemporal ??
+                                productos
+                                    .where((p) => p.id == d.productoId)
+                                    .firstOrNull
+                                    ?.nombre ??
+                                'Producto')),
+                        Text('${d.cantidad}',
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ]),
+                    )),
                 const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

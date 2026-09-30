@@ -7,11 +7,14 @@ class SaveEncargoUseCase {
 
   SaveEncargoUseCase(this._repository);
 
-  Future<int> call(Encargo encargo, {int? montoPagoInicial, String? metodoPago}) async {
+  Future<int> call(Encargo encargo,
+      {int? montoPagoInicial,
+      String? metodoPago,
+      bool liquidarSaldo = false}) async {
     if (encargo.detalles.isEmpty) {
       throw ValidationFailure('El encargo debe tener al menos un producto.');
     }
-    
+
     for (final detalle in encargo.detalles) {
       if (detalle.cantidad <= 0) {
         throw ValidationFailure('La cantidad debe ser mayor a 0.');
@@ -25,6 +28,9 @@ class SaveEncargoUseCase {
       throw ValidationFailure('Debes seleccionar un cliente para un encargo.');
     }
 
-    return await _repository.saveEncargo(encargo, montoPagoInicial: montoPagoInicial, metodoPago: metodoPago);
+    return await _repository.saveEncargo(encargo,
+        montoPagoInicial: montoPagoInicial,
+        metodoPago: metodoPago,
+        liquidarSaldo: liquidarSaldo);
   }
 }

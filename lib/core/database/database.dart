@@ -15,6 +15,7 @@ import 'tables/encargos.dart';
 import 'tables/encargo_detalle.dart';
 import 'tables/pagos.dart';
 import 'tables/perfil_usuario.dart';
+import 'tables/compras.dart';
 
 part 'database.g.dart';
 
@@ -28,15 +29,16 @@ part 'database.g.dart';
   EncargoDetalle,
   Pagos,
   PerfilUsuario,
+  Compras,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
-  
+
   // Constructor para pruebas (in-memory)
   AppDatabase.at(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 8; // Incrementado a 8 para incluir nombre_temporal en encargo_detalle
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
@@ -51,6 +53,29 @@ class AppDatabase extends _$AppDatabase {
             await m.deleteTable(table.actualTableName);
           }
           await m.createAll();
+        } else {
+          if (from < 9) {
+            await m.addColumn(encargoDetalle, encargoDetalle.comprado);
+            await customStatement(
+                "UPDATE encargo_detalle SET comprado = 1 WHERE encargo_id IN (SELECT id FROM encargos WHERE estado IN ('COMPRADO', 'ENTREGADO', 'FINALIZADO'))");
+          }
+          if (from < 10) {
+            await m.addColumn(encargoDetalle, encargoDetalle.cantidadComprada);
+          }
+          if (from < 11) {
+            await m.createTable(compras);
+            await m.addColumn(encargoDetalle, encargoDetalle.compraId);
+            await m.addColumn(encargoDetalle, encargoDetalle.costoLogistica);
+            await m.addColumn(encargos, encargos.fechaEntregaReal);
+            await m.addColumn(viajes, viajes.montoDistribuido);
+            // La fecha exacta de entrega no estaba guardada en versiones anteriores.
+            await customStatement(
+                "UPDATE encargos SET fecha_entrega_real = fecha WHERE estado IN ('ENTREGADO', 'FINALIZADO')");
+            await customStatement(
+                'UPDATE encargo_detalle SET costo_logistica = cantidad * COALESCE((SELECT comision_viaje FROM productos WHERE productos.id = encargo_detalle.producto_id), 0)');
+            await customStatement(
+                'UPDATE viajes SET monto_distribuido = COALESCE((SELECT SUM(monto) FROM gastos WHERE gastos.viaje_id = viajes.id), 0) WHERE distribuido = 1');
+          }
         }
       },
       beforeOpen: (details) async {

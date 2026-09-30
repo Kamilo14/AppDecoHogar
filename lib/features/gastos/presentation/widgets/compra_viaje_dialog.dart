@@ -1,85 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../productos/domain/entities/producto_entity.dart';
 import '../../../productos/presentation/providers/producto_providers.dart';
-import '../../../productos/presentation/widgets/producto_form_dialog.dart';
+import '../../../clientes/presentation/providers/cliente_providers.dart';
+import '../../../encargos/presentation/providers/encargo_providers.dart';
+import '../../data/datasources/compra_local_datasource.dart';
 import '../providers/viaje_providers.dart';
-
-enum ModoEntrada { existente, nuevo }
 
 class CompraViajeDialog extends ConsumerStatefulWidget {
   final int viajeId;
   const CompraViajeDialog({super.key, required this.viajeId});
-
   @override
-  ConsumerState<CompraViajeDialog> createState() => _CompraViajeDialogState();
+  ConsumerState<CompraViajeDialog> createState() => _CompraViajeState();
 }
 
-class _CompraViajeDialogState extends ConsumerState<CompraViajeDialog> {
-  final _formKey = GlobalKey<FormState>();
-  ModoEntrada _modo = ModoEntrada.existente;
-  int? _productoId;
-  final _cantidadCtrl = TextEditingController(text: '1');
-  final _searchCtrl = TextEditingController();
-  bool _isLoading = false;
+class _LineaCompra {
+  String modo = 'catalogo';
+  int? productoId, encargoId, detalleId;
+  final nombre = TextEditingController();
+  final cantidad = TextEditingController(text: '1');
+  final costo = TextEditingController();
+  final precio = TextEditingController();
+  final cliente = TextEditingController(text: '1');
+  bool todas = true;
+  void dispose() {
+    for (final c in [nombre, cantidad, costo, precio, cliente]) {
+      c.dispose();
+    }
+  }
+}
 
+class _CompraViajeState extends ConsumerState<CompraViajeDialog> {
+  final form = GlobalKey<FormState>();
+  final lineas = [_LineaCompra()];
+  bool guardando = false;
   @override
   void dispose() {
-    _cantidadCtrl.dispose();
-    _searchCtrl.dispose();
+    for (final l in lineas) {
+      l.dispose();
+    }
     super.dispose();
   }
 
-  Future<void> _abrirFormularioNuevo() async {
-    final nuevoProd = await showDialog<Producto>(
-      context: context,
-      builder: (_) => ProductoFormDialog(
-        productoExistente: Producto(
-          nombre: '',
-          precioCompra: 0,
-          precioVenta: 0,
-          cantidadDisponible: 0,
-          viajeId: widget.viajeId,
-        ),
-      ),
-    );
-
-    if (nuevoProd != null && nuevoProd.id != null) {
-      setState(() {
-        _productoId = nuevoProd.id;
-        _modo = ModoEntrada.existente; // Cambiamos a existente para mostrar el producto creado
-        _searchCtrl.text = nuevoProd.nombre;
-      });
-    }
-  }
-
-  Future<void> _guardar() async {
-    if (_modo == ModoEntrada.existente && _productoId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, selecciona un producto')),
-      );
-      return;
-    }
-
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-
+  Future<void> guardar() async {
+    if (!form.currentState!.validate()) return;
+    setState(() => guardando = true);
     try {
-      final productos = ref.read(productosStreamProvider).asData?.value ?? [];
-      final producto = productos.firstWhere((p) => p.id == _productoId);
-      
-      final productoActualizado = producto.copyWith(
-        cantidadDisponible: producto.cantidadDisponible + int.parse(_cantidadCtrl.text),
-        viajeId: widget.viajeId,
-      );
-
-      await ref.read(saveProductoUseCaseProvider).call(productoActualizado);
-      if (mounted) Navigator.of(context).pop();
+      await ref.read(compraDataSourceProvider).registrar(
+          widget.viajeId,
+          lineas
+              .map((l) => EntradaCompra(
+                    productoId: l.productoId,
+                    nombre: l.nombre.text.trim(),
+                    cantidad: int.parse(l.cantidad.text),
+                    costoUnitario: int.parse(l.costo.text),
+                    precioVenta: int.parse(l.precio.text),
+                    encargoId: l.encargoId,
+                    detalleId: l.detalleId,
+                    cantidadCliente: l.encargoId == null
+                        ? 0
+                        : int.parse(l.todas ? l.cantidad.text : l.cliente.text),
+                  ))
+              .toList());
+      if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        setState(() => guardando = false);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
@@ -87,114 +75,227 @@ class _CompraViajeDialogState extends ConsumerState<CompraViajeDialog> {
   @override
   Widget build(BuildContext context) {
     final productos = ref.watch(productosStreamProvider).asData?.value ?? [];
-
-    return AlertDialog(
-      title: Text('Cargar Mercadería', style: GoogleFonts.outfit(fontWeight: FontWeight.w800)),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Selector de Modo: Existente o Nuevo
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<ModoEntrada>(
-                      title: const Text('Existente', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      value: ModoEntrada.existente,
-                      groupValue: _modo,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (val) => setState(() => _modo = val!),
-                    ),
-                  ),
-                  Expanded(
-                    child: RadioListTile<ModoEntrada>(
-                      title: const Text('Crear Nuevo', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      value: ModoEntrada.nuevo,
-                      groupValue: _modo,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (val) {
-                        setState(() => _modo = val!);
-                        _abrirFormularioNuevo();
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(),
-              const SizedBox(height: 12),
-
-              if (_modo == ModoEntrada.existente)
-                Autocomplete<Producto>(
-                  optionsBuilder: (textValue) {
-                    if (textValue.text.isEmpty) return const Iterable<Producto>.empty();
-                    return productos.where((p) => 
-                      p.activo && p.nombre.toLowerCase().contains(textValue.text.toLowerCase())
-                    );
-                  },
-                  displayStringForOption: (p) => p.nombre,
-                  onSelected: (p) {
-                    setState(() {
-                      _productoId = p.id;
-                      _searchCtrl.text = p.nombre;
-                    });
-                  },
-                  fieldViewBuilder: (ctx, ctrl, node, onSubmitted) {
-                    if (ctrl.text.isEmpty && _searchCtrl.text.isNotEmpty) {
-                      ctrl.text = _searchCtrl.text;
-                    }
-                    return TextFormField(
-                      controller: ctrl,
-                      focusNode: node,
-                      decoration: const InputDecoration(
-                        labelText: 'Buscar producto...',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
-                      ),
-                    );
-                  },
-                ),
-              
-              if (_modo == ModoEntrada.nuevo)
-                OutlinedButton.icon(
-                  onPressed: _abrirFormularioNuevo,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    side: BorderSide(color: Theme.of(context).colorScheme.primary),
-                  ),
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('Abrir Formulario Nuevo'),
-                ),
-
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _cantidadCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Cantidad comprada hoy',
-                  prefixIcon: Icon(Icons.add_box_outlined),
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  final n = int.tryParse(v ?? '');
-                  if (n == null || n <= 0) return 'Cantidad inválida';
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-        FilledButton(
-          onPressed: _isLoading ? null : _guardar, 
-          child: _isLoading 
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-            : const Text('Sumar al Stock'),
-        ),
-      ],
-    );
+    final encargos = ref.watch(encargosStreamProvider).asData?.value ?? [];
+    final clientes = ref.watch(clientesStreamProvider).asData?.value ?? [];
+    final pendientes = [
+      for (final e
+          in encargos.where((e) => e.activo && e.estado == 'PENDIENTE'))
+        for (final d
+            in e.detalles.where((d) => !d.comprado && d.compraId == null))
+          (encargo: e, detalle: d)
+    ];
+    return Dialog.fullscreen(
+        child: Scaffold(
+      appBar: AppBar(title: const Text('Registrar compras del viaje')),
+      body: Form(
+          key: form,
+          child: ListView(padding: const EdgeInsets.all(20), children: [
+            const Text(
+                'Cada compra se registra una vez. Puedes crear productos, reponer stock o asociar unidades a un encargo.'),
+            ...lineas.asMap().entries.map((entry) {
+              final l = entry.value;
+              return Card(
+                  key: ObjectKey(l),
+                  child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(children: [
+                        Row(children: [
+                          Expanded(child: Text('Producto ${entry.key + 1}')),
+                          IconButton(
+                              onPressed: guardando || lineas.length == 1
+                                  ? null
+                                  : () => setState(() {
+                                        lineas.remove(l);
+                                        l.dispose();
+                                      }),
+                              icon: const Icon(Icons.delete_outline))
+                        ]),
+                        DropdownButtonFormField<String>(
+                            initialValue: l.modo,
+                            isExpanded: true,
+                            decoration:
+                                const InputDecoration(labelText: 'Origen'),
+                            items: const [
+                              DropdownMenuItem(
+                                  value: 'catalogo',
+                                  child:
+                                      Text('Producto existente / reposición')),
+                              DropdownMenuItem(
+                                  value: 'nuevo',
+                                  child: Text('Producto nuevo')),
+                              DropdownMenuItem(
+                                  value: 'encargo',
+                                  child: Text('Asociar a un encargo pendiente'))
+                            ],
+                            onChanged: guardando
+                                ? null
+                                : (v) => setState(() {
+                                      l.modo = v!;
+                                      l.productoId = null;
+                                      l.encargoId = null;
+                                      l.detalleId = null;
+                                      l.nombre.clear();
+                                    })),
+                        const SizedBox(height: 12),
+                        if (l.modo == 'catalogo')
+                          Autocomplete<Producto>(
+                              optionsBuilder: (v) => productos.where((p) =>
+                                  p.activo &&
+                                  p.nombre
+                                      .toLowerCase()
+                                      .contains(v.text.toLowerCase())),
+                              displayStringForOption: (p) => p.nombre,
+                              onSelected: (p) {
+                                l.productoId = p.id;
+                                l.nombre.text = p.nombre;
+                                l.costo.text = p.precioCompra?.toString() ?? '';
+                                l.precio.text = p.precioVenta?.toString() ?? '';
+                              },
+                              fieldViewBuilder: (_, ctrl, node, __) =>
+                                  TextFormField(
+                                      controller: ctrl,
+                                      focusNode: node,
+                                      decoration: const InputDecoration(
+                                          labelText:
+                                              'Buscar y seleccionar producto',
+                                          prefixIcon: Icon(Icons.search)),
+                                      onChanged: (_) {
+                                        l.productoId = null;
+                                      },
+                                      validator: (_) => l.productoId == null
+                                          ? 'Selecciona un producto de la lista'
+                                          : null)),
+                        if (l.modo == 'nuevo')
+                          TextFormField(
+                              controller: l.nombre,
+                              decoration: const InputDecoration(
+                                  labelText: 'Nombre del nuevo producto'),
+                              validator: (v) => (v ?? '').trim().isEmpty
+                                  ? 'Ingresa el nombre'
+                                  : null),
+                        if (l.modo == 'encargo')
+                          DropdownButtonFormField<int>(
+                              initialValue: l.detalleId,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                  labelText: 'Cliente y producto solicitado'),
+                              items: pendientes.map((p) {
+                                final cliente = clientes
+                                        .where(
+                                            (c) => c.id == p.encargo.clienteId)
+                                        .firstOrNull
+                                        ?.nombre ??
+                                    'Cliente';
+                                final nombre = p.detalle.nombreTemporal ??
+                                    productos
+                                        .where((prod) =>
+                                            prod.id == p.detalle.productoId)
+                                        .firstOrNull
+                                        ?.nombre ??
+                                    'Producto';
+                                return DropdownMenuItem(
+                                    value: p.detalle.id,
+                                    child: Text(
+                                        '$cliente · $nombre (${p.detalle.cantidad})',
+                                        overflow: TextOverflow.ellipsis));
+                              }).toList(),
+                              validator: (v) =>
+                                  v == null ? 'Selecciona el encargo' : null,
+                              onChanged: (v) => setState(() {
+                                    final p = pendientes
+                                        .firstWhere((p) => p.detalle.id == v);
+                                    l.detalleId = v;
+                                    l.encargoId = p.encargo.id;
+                                    l.productoId = p.detalle.productoId;
+                                    l.nombre.text = p.detalle.nombreTemporal ??
+                                        productos
+                                            .where((prod) =>
+                                                prod.id == l.productoId)
+                                            .firstOrNull
+                                            ?.nombre ??
+                                        '';
+                                    l.cantidad.text =
+                                        p.detalle.cantidad.toString();
+                                    l.cliente.text = l.cantidad.text;
+                                    l.costo.text =
+                                        p.detalle.costoUnitario?.toString() ??
+                                            '';
+                                    l.precio.text =
+                                        p.detalle.precioUnitario?.toString() ??
+                                            '';
+                                  })),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                            controller: l.cantidad,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                labelText: 'Cantidad comprada'),
+                            validator: (v) => (int.tryParse(v ?? '') ?? 0) <= 0
+                                ? 'Mínimo 1'
+                                : null),
+                        if (l.modo == 'encargo') ...[
+                          CheckboxListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text(
+                                  'Todas las unidades son para el cliente'),
+                              value: l.todas,
+                              onChanged: (v) => setState(() => l.todas = v!)),
+                          if (!l.todas)
+                            TextFormField(
+                                controller: l.cliente,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                    labelText: 'Cantidad para el cliente'),
+                                validator: (v) {
+                                  final n = int.tryParse(v ?? '') ?? 0;
+                                  return n <= 0 ||
+                                          n >
+                                              (int.tryParse(l.cantidad.text) ??
+                                                  0)
+                                      ? 'Revisa las unidades para el cliente'
+                                      : null;
+                                }),
+                        ],
+                        const SizedBox(height: 12),
+                        Row(children: [
+                          Expanded(
+                              child: TextFormField(
+                                  controller: l.costo,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                      labelText: 'Costo unitario',
+                                      prefixText: r'$ '),
+                                  validator: (v) =>
+                                      int.tryParse(v ?? '') == null ||
+                                              int.parse(v!) < 0
+                                          ? 'Costo inválido'
+                                          : null)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: TextFormField(
+                                  controller: l.precio,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                      labelText: 'Precio de venta',
+                                      prefixText: r'$ '),
+                                  validator: (v) =>
+                                      (int.tryParse(v ?? '') ?? 0) <= 0
+                                          ? 'Precio inválido'
+                                          : null)),
+                        ]),
+                      ])));
+            }),
+            OutlinedButton.icon(
+                onPressed: guardando
+                    ? null
+                    : () => setState(() => lineas.add(_LineaCompra())),
+                icon: const Icon(Icons.add),
+                label: const Text('Añadir otro producto')),
+            FilledButton(
+                onPressed: guardando ? null : guardar,
+                child: Text(
+                    guardando ? 'Guardando…' : 'Guardar todas las compras')),
+          ])),
+    ));
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/core_providers.dart';
+import '../../../encargos/presentation/providers/encargo_providers.dart';
 import '../../data/datasources/categoria_local_datasource.dart';
 import '../../data/datasources/producto_local_datasource.dart';
 import '../../data/repositories/producto_repository_impl.dart';
@@ -38,7 +39,8 @@ final saveProductoUseCaseProvider = Provider<SaveProductoUseCase>((ref) {
   return SaveProductoUseCase(ref.watch(productoRepositoryProvider));
 });
 
-final softDeleteProductoUseCaseProvider = Provider<SoftDeleteProductoUseCase>((ref) {
+final softDeleteProductoUseCaseProvider =
+    Provider<SoftDeleteProductoUseCase>((ref) {
   return SoftDeleteProductoUseCase(ref.watch(productoRepositoryProvider));
 });
 
@@ -69,9 +71,29 @@ final productosFiltradosProvider = Provider<AsyncValue<List<Producto>>>((ref) {
 
   return productos.whenData((list) {
     return list.where((producto) {
-      final coincideNombre = query.isEmpty || producto.nombre.toLowerCase().contains(query);
-      final coincideCategoria = categoriaId == null || producto.categoriaId == categoriaId;
+      final coincideNombre =
+          query.isEmpty || producto.nombre.toLowerCase().contains(query);
+      final coincideCategoria =
+          categoriaId == null || producto.categoriaId == categoriaId;
       return coincideNombre && coincideCategoria;
     }).toList();
   });
+});
+
+/// Existencias físicas menos unidades reservadas para encargos sin entregar.
+final stockLibreProvider = Provider<Map<int, int>>((ref) {
+  final productos = ref.watch(productosStreamProvider).asData?.value ?? [];
+  final encargos = ref.watch(encargosStreamProvider).asData?.value ?? [];
+  final libres = {
+    for (final p in productos)
+      if (p.id != null) p.id!: p.cantidadDisponible
+  };
+  for (final e in encargos.where(
+      (e) => e.activo && e.estado != 'ENTREGADO' && e.estado != 'FINALIZADO')) {
+    for (final d
+        in e.detalles.where((d) => d.comprado && d.productoId != null)) {
+      libres.update(d.productoId!, (n) => n - d.cantidad, ifAbsent: () => 0);
+    }
+  }
+  return libres.map((k, v) => MapEntry(k, v < 0 ? 0 : v));
 });

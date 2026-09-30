@@ -9,10 +9,13 @@ import '../../../clientes/domain/entities/cliente_entity.dart';
 import '../../../clientes/presentation/providers/cliente_providers.dart';
 import '../../../productos/domain/entities/producto_entity.dart';
 import '../../../productos/presentation/providers/producto_providers.dart';
+
 import '../../../pagos/presentation/providers/pago_providers.dart';
 import '../../domain/entities/encargo_entity.dart';
 import '../providers/encargo_providers.dart';
 import '../widgets/encargo_form_screen.dart';
+
+import '../../../../core/theme/app_colors.dart';
 
 class EncargoDetailScreen extends ConsumerStatefulWidget {
   final Encargo encargo;
@@ -20,10 +23,12 @@ class EncargoDetailScreen extends ConsumerStatefulWidget {
   const EncargoDetailScreen({super.key, required this.encargo});
 
   @override
-  ConsumerState<EncargoDetailScreen> createState() => _EncargoDetailScreenState();
+  ConsumerState<EncargoDetailScreen> createState() =>
+      _EncargoDetailScreenState();
 }
 
-class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with SingleTickerProviderStateMixin {
+class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late Encargo _currentEncargo;
 
@@ -44,26 +49,34 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
   Widget build(BuildContext context) {
     final encargosAsync = ref.watch(encargosStreamProvider);
     encargosAsync.whenData((list) {
-      final updated = list.firstWhere((e) => e.id == _currentEncargo.id, orElse: () => _currentEncargo);
+      final updated = list.firstWhere((e) => e.id == _currentEncargo.id,
+          orElse: () => _currentEncargo);
       if (updated != _currentEncargo) {
-        setState(() => _currentEncargo = updated);
+        _currentEncargo = updated;
       }
     });
 
-    final id = _currentEncargo.id!;
-    final clientes = ref.watch(clientesStreamProvider).asData?.value ?? const [];
-    final productos = ref.watch(productosStreamProvider).asData?.value ?? const [];
+    final clientes =
+        ref.watch(clientesStreamProvider).asData?.value ?? const [];
+    final productos =
+        ref.watch(productosStreamProvider).asData?.value ?? const [];
     final pagos = ref.watch(pagosStreamProvider).asData?.value ?? const [];
-    
+
     final cliente = clientes.firstWhere(
       (c) => c.id == _currentEncargo.clienteId,
       orElse: () => Cliente(nombre: 'Cliente', fechaRegistro: DateTime(2000)),
     );
 
-    // Trazabilidad: Pagos asociados a este encargo
-    final pagosEncargo = pagos.where((p) => p.clienteId == _currentEncargo.clienteId && p.concepto != null && p.concepto!.contains('ENC-${_currentEncargo.id}')).toList();
-    // Alternativamente, si no hay asociación directa por ID en la tabla pagos todavía, sumamos lo abonado por el cliente en general para este pedido
+    // Los pagos se relacionan por ID, independientemente de su descripción.
+    final pagosEncargo =
+        pagos.where((p) => p.encargoId == _currentEncargo.id).toList();
     final totalAbonado = pagosEncargo.fold(0, (sum, p) => sum + p.monto);
+    final deudaGlobal = _currentEncargo.clienteId == null
+        ? 0
+        : ref.watch(deudaClienteProvider(_currentEncargo.clienteId!));
+    final saldoPendiente = (_currentEncargo.totalExigible - totalAbonado)
+        .clamp(0, deudaGlobal < 0 ? 0 : deudaGlobal)
+        .toInt();
 
     return Scaffold(
       appBar: AppBar(
@@ -74,7 +87,8 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
             onPressed: () async {
               await Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => EncargoFormScreen(encargoExistente: _currentEncargo),
+                  builder: (_) =>
+                      EncargoFormScreen(encargoExistente: _currentEncargo),
                 ),
               );
             },
@@ -87,7 +101,8 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               children: [
-                WarmClienteAvatar(nombre: cliente.nombre, radius: 28, tieneDeuda: false),
+                WarmClienteAvatar(
+                    nombre: cliente.nombre, radius: 28, tieneDeuda: false),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -95,11 +110,13 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
                     children: [
                       Text(
                         cliente.nombre,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 20, fontWeight: FontWeight.w900),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontSize: 20, fontWeight: FontWeight.w900),
                       ),
                       const SizedBox(height: 2),
                       if (cliente.telefono != null)
-                        Text(cliente.telefono!, style: Theme.of(context).textTheme.bodyMedium),
+                        Text(cliente.telefono!,
+                            style: Theme.of(context).textTheme.bodyMedium),
                     ],
                   ),
                 ),
@@ -127,8 +144,11 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
                     WarmSurfaceCard(
                       child: Column(
                         children: [
-                          WarmInfoRow(label: 'Estado', value: _currentEncargo.estado),
-                          WarmInfoRow(label: 'Fecha', value: formatDateCl(_currentEncargo.fecha)),
+                          WarmInfoRow(
+                              label: 'Estado', value: _currentEncargo.estado),
+                          WarmInfoRow(
+                              label: 'Fecha',
+                              value: formatDateCl(_currentEncargo.fecha)),
                           const Divider(height: 24),
                           WarmInfoRow(
                             label: 'Total Encargo',
@@ -142,7 +162,7 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
                           ),
                           WarmInfoRow(
                             label: 'Pendiente',
-                            value: formatCurrencyClp(_currentEncargo.total - totalAbonado),
+                            value: formatCurrencyClp(saldoPendiente),
                             isBoldValue: true,
                           ),
                         ],
@@ -156,26 +176,46 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
                   children: _currentEncargo.detalles.map((detalle) {
                     final prod = productos.firstWhere(
                       (p) => p.id == detalle.productoId,
-                      orElse: () => Producto(nombre: 'Producto', precioCompra: 0, precioVenta: 0),
+                      orElse: () => Producto(
+                          nombre: detalle.nombreTemporal ?? 'Producto',
+                          precioCompra: 0,
+                          precioVenta: 0),
                     );
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: WarmSurfaceCard(
                         child: Row(
                           children: [
-                            const Icon(Icons.shopping_bag_outlined, color: Color(0xFFBFA995)),
+                            Icon(
+                                detalle.comprado
+                                    ? Icons.check_box
+                                    : Icons.check_box_outline_blank,
+                                color: const Color(0xFFBFA995)),
                             const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(prod.nombre, style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 14)),
-                                  Text('Cantidad: ${detalle.cantidad}', style: Theme.of(context).textTheme.bodySmall),
+                                  Text(prod.nombre,
+                                      style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 14)),
+                                  if (detalle.unidadesCompradas !=
+                                      detalle.cantidad)
+                                    Text(
+                                        'Compradas: ${detalle.unidadesCompradas} · Para inventario: ${detalle.unidadesCompradas - detalle.cantidad}'),
+                                  Text(
+                                      'Cantidad para el cliente: ${detalle.cantidad}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall),
                                 ],
                               ),
                             ),
                             if (detalle.precioUnitario != null)
-                              Text(formatCurrencyClp(detalle.subtotal), style: GoogleFonts.outfit(fontWeight: FontWeight.w900)),
+                              Text(formatCurrencyClp(detalle.subtotal),
+                                  style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w900)),
                           ],
                         ),
                       ),
@@ -186,12 +226,18 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
                 ListView(
                   padding: const EdgeInsets.all(20),
                   children: pagosEncargo.isEmpty
-                      ? [const Center(child: Text('No hay abonos registrados para este encargo'))]
+                      ? [
+                          const Center(
+                              child: Text(
+                                  'No hay abonos registrados para este encargo'))
+                        ]
                       : pagosEncargo.map((pago) {
                           return ListTile(
                             title: Text(pago.tipo),
                             subtitle: Text(formatDateCl(pago.fecha)),
-                            trailing: Text(formatCurrencyClp(pago.monto), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            trailing: Text(formatCurrencyClp(pago.monto),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
                           );
                         }).toList(),
                 ),
@@ -200,7 +246,8 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
                   padding: const EdgeInsets.all(20),
                   children: [
                     WarmSurfaceCard(
-                      child: Text(_currentEncargo.observaciones ?? 'Sin observaciones.'),
+                      child: Text(_currentEncargo.observaciones ??
+                          'Sin observaciones.'),
                     ),
                   ],
                 ),
@@ -209,6 +256,123 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen> with 
           ),
         ],
       ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            children: [
+              if (_currentEncargo.estado == 'PENDIENTE') ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      side: const BorderSide(color: AppColors.primary),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => EncargoFormScreen(
+                            encargoExistente: _currentEncargo),
+                      ));
+                    },
+                    icon: const Icon(Icons.shopping_cart_checkout_rounded,
+                        color: AppColors.primary, size: 20),
+                    label: Text(
+                      'REGISTRAR COMPRA',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      backgroundColor: AppColors.secondary,
+                    ),
+                    onPressed: () => _mostrarDialogoEntregaYPago(context),
+                    icon: const Icon(Icons.check_circle_outline_rounded,
+                        size: 20),
+                    label: Text(
+                      'ENTREGAR',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                  ),
+                ),
+              ] else if (_currentEncargo.estado == 'COMPRADO') ...[
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      backgroundColor: AppColors.secondary,
+                    ),
+                    onPressed: () => _mostrarDialogoEntregaYPago(context),
+                    icon: const Icon(Icons.check_circle_outline_rounded,
+                        size: 20),
+                    label: Text(
+                      'ENTREGAR AL CLIENTE',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.check_circle_rounded,
+                            color: AppColors.secondary, size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Encargo Entregado',
+                          style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.secondary,
+                              fontSize: 15),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
+  }
+
+  Future<void> _mostrarDialogoEntregaYPago(BuildContext context) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => EncargoFormScreen(
+        encargoExistente: _currentEncargo.copyWith(estado: 'ENTREGADO'),
+      ),
+    ));
   }
 }

@@ -10,15 +10,18 @@ class ClienteDeudaResumen {
 }
 
 class GetReporteDeudasUseCase {
-  List<ClienteDeudaResumen> call(List<Cliente> clientes, List<Encargo> encargos, List<Pago> pagos) {
+  List<ClienteDeudaResumen> call(
+      List<Cliente> clientes, List<Encargo> encargos, List<Pago> pagos) {
     final result = <ClienteDeudaResumen>[];
 
     for (final cliente in clientes) {
       final ventas = encargos
           .where((encargo) => encargo.clienteId == cliente.id)
-          .where((encargo) => encargo.estado == 'ENTREGADO' || encargo.estado == 'FINALIZADO')
-          .fold(0, (sum, encargo) => sum + encargo.total);
-      final recuperado = pagos.where((pago) => pago.clienteId == cliente.id).fold(0, (sum, pago) => sum + pago.monto);
+          .where((encargo) => encargo.activo)
+          .fold(0, (sum, encargo) => sum + encargo.totalExigible);
+      final recuperado = pagos
+          .where((pago) => pago.clienteId == cliente.id)
+          .fold(0, (sum, pago) => sum + pago.monto);
       final deuda = ventas - recuperado;
       if (deuda > 0) {
         result.add(ClienteDeudaResumen(cliente: cliente, deuda: deuda));

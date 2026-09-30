@@ -1,240 +1,182 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../../../core/widgets/warm_ui.dart';
-import '../../../productos/presentation/providers/producto_providers.dart';
+import '../../../clientes/presentation/providers/cliente_providers.dart';
+import '../../../encargos/presentation/providers/encargo_providers.dart';
 import '../providers/viaje_providers.dart';
 import '../widgets/gasto_form_dialog.dart';
 import '../widgets/compra_viaje_dialog.dart';
 
 class ViajeDetailScreen extends ConsumerStatefulWidget {
   final int viajeId;
-
   const ViajeDetailScreen({super.key, required this.viajeId});
-
   @override
-  ConsumerState<ViajeDetailScreen> createState() => _ViajeDetailScreenState();
+  ConsumerState<ViajeDetailScreen> createState() => _ViajeDetailState();
 }
 
-class _ViajeDetailScreenState extends ConsumerState<ViajeDetailScreen> {
-  double _montoADistribuir = 0;
-  bool _initialized = false;
+class _ViajeDetailState extends ConsumerState<ViajeDetailScreen> {
+  double? monto;
+  bool guardando = false;
+  Future<void> aplicar(int cantidad) async {
+    setState(() => guardando = true);
+    try {
+      await ref
+          .read(distribuirGastosUseCaseProvider)
+          .call(widget.viajeId, cantidad);
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Reparto guardado. Los gastos no se contabilizan dos veces.')));
+    } catch (e) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => guardando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final viajeAsync = ref.watch(viajeDetalleProvider(widget.viajeId));
-    final productos = ref.watch(productosStreamProvider).asData?.value ?? const [];
-    final productosDelViaje = productos.where((p) => p.viajeId == widget.viajeId).toList();
-
+    final comprasAsync = ref.watch(comprasStreamProvider);
+    final compras = (comprasAsync.asData?.value ?? [])
+        .where((c) => c.viajeId == widget.viajeId)
+        .toList();
+    final encargos = ref.watch(encargosStreamProvider).asData?.value ?? [];
+    final clientes = ref.watch(clientesStreamProvider).asData?.value ?? [];
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Logística de Viaje', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-      ),
-      body: viajeAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
-        data: (viaje) {
-          if (viaje == null) return const Center(child: Text('Viaje no encontrado'));
-
-          if (!_initialized) {
-            _montoADistribuir = viaje.totalGastos.toDouble();
-            _initialized = true;
-          }
-
-          double totalInversion = 0;
-          for (final p in productosDelViaje) {
-            final pesoPrecio = (p.precioCompra ?? 1000).toDouble();
-            final pesoCantidad = p.cantidadDisponible <= 0 ? 1.0 : p.cantidadDisponible.toDouble();
-            totalInversion += (pesoPrecio * pesoCantidad);
-          }
-
-          return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            children: [
-              // Info del Viaje
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.01), blurRadius: 10, offset: const Offset(0, 4))
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(viaje.destino, style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 22, color: AppColors.textPrimary)),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
-                          onPressed: () => showDialog(context: context, builder: (_) => GastoFormDialog(viajeId: widget.viajeId)),
-                        ),
-                      ],
-                    ),
-                    Text(formatDateCl(viaje.fecha), style: GoogleFonts.outfit(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
-                    const Divider(height: 32, color: AppColors.outline),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Gastos totales:', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                        Text(formatCurrencyClp(viaje.totalGastos), style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Simulador
-              Text('Simulador de Costos', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Monto a recuperar:', style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                        Text(formatCurrencyClp(_montoADistribuir.toInt()), 
-                          style: GoogleFonts.outfit(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 18)),
-                      ],
-                    ),
-                    Slider(
-                      value: _montoADistribuir,
-                      min: 0,
-                      max: (viaje.totalGastos > 0) ? viaje.totalGastos.toDouble() : 100,
-                      activeColor: AppColors.primary,
-                      inactiveColor: AppColors.outline,
-                      onChanged: (val) => setState(() => _montoADistribuir = val),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Lista de Productos
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Precios Estimados', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
+        appBar: AppBar(title: const Text('Logística del viaje')),
+        body: ref.watch(viajeDetalleProvider(widget.viajeId)).when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('$e')),
+            data: (viaje) {
+              if (viaje == null)
+                return const Center(child: Text('Viaje no encontrado'));
+              final inversion = compras.fold<int>(
+                  0, (s, c) => s + c.cantidad * c.costoUnitario);
+              final simulado = (monto ?? viaje.montoDistribuido.toDouble())
+                  .clamp(0, viaje.totalGastos.toDouble())
+                  .toDouble();
+              final base = compras.fold<int>(
+                  0,
+                  (s, c) =>
+                      s +
+                      (c.costoUnitario > 0 ? c.costoUnitario : 1) * c.cantidad);
+              return ListView(padding: const EdgeInsets.all(20), children: [
+                Text(viaje.destino,
+                    style: Theme.of(context).textTheme.headlineSmall),
+                Text(formatDateCl(viaje.fecha)),
+                if (viaje.observaciones != null) Text(viaje.observaciones!),
+                const SizedBox(height: 16),
+                _total('Compras de mercadería', inversion),
+                _total('Gastos del viaje', viaje.totalGastos),
+                _total('Desembolso total', inversion + viaje.totalGastos),
+                const Divider(height: 32),
+                Row(children: [
+                  const Expanded(
+                      child: Text('Detalle de gastos',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
                   IconButton(
-                    icon: const Icon(Icons.add_shopping_cart_rounded, color: AppColors.secondary),
-                    onPressed: () => showDialog(context: context, builder: (_) => CompraViajeDialog(viajeId: widget.viajeId)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (productosDelViaje.isEmpty)
-                Center(child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Text('Añade productos comprados en este viaje.', style: GoogleFonts.outfit(color: AppColors.textSecondary)),
-                ))
-              else
-                ...productosDelViaje.map((p) {
-                  double comisionUnitaria = 0;
-                  if (totalInversion > 0) {
-                    final pesoTotalProducto = (p.precioCompra ?? 1000) * (p.cantidadDisponible <= 0 ? 1 : p.cantidadDisponible);
-                    final comisionTotalEsteProducto = (_montoADistribuir * (pesoTotalProducto / totalInversion));
-                    comisionUnitaria = comisionTotalEsteProducto / (p.cantidadDisponible <= 0 ? 1 : p.cantidadDisponible);
-                  }
-                  
-                  final int roundComision = comisionUnitaria.round();
-                  final precioFinal = (p.precioVenta ?? 0) + roundComision;
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(color: AppColors.background, shape: BoxShape.circle),
-                          child: Center(child: Text(p.nombre[0].toUpperCase(), style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: AppColors.textSecondary))),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
+                      tooltip: 'Agregar comida, pasajes o peajes',
+                      icon: const Icon(Icons.add),
+                      onPressed: () => showDialog(
+                          context: context,
+                          builder: (_) =>
+                              GastoFormDialog(viajeId: widget.viajeId)))
+                ]),
+                if (viaje.gastos.isEmpty) const Text('Sin gastos registrados.'),
+                ...viaje.gastos.map((g) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(g.tipo),
+                    trailing: Text(formatCurrencyClp(g.monto)))),
+                const Divider(height: 32),
+                const Text('Distribuir gastos en las compras',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                    'El monto elegido se incorpora al costo de la mercadería. El resto se registra como gasto separado en Reportes.'),
+                Slider(
+                    value: simulado,
+                    min: 0,
+                    max: viaje.totalGastos > 0
+                        ? viaje.totalGastos.toDouble()
+                        : 1,
+                    onChanged: guardando || compras.isEmpty
+                        ? null
+                        : (v) => setState(() => monto = v)),
+                _total('Reparto seleccionado', simulado.round()),
+                _total('Ya incorporado al costo', viaje.montoDistribuido),
+                _total('Egresos separados guardados', viaje.gastoSinDistribuir),
+                FilledButton(
+                    onPressed:
+                        guardando ? null : () => aplicar(simulado.round()),
+                    child: Text(guardando ? 'Guardando…' : 'Guardar reparto')),
+                const Divider(height: 32),
+                Row(children: [
+                  const Expanded(
+                      child: Text('Compras y precios estimados',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  IconButton(
+                      tooltip: 'Registrar varias compras',
+                      icon: const Icon(Icons.add_shopping_cart),
+                      onPressed: () => showDialog(
+                          context: context,
+                          builder: (_) =>
+                              CompraViajeDialog(viajeId: widget.viajeId)))
+                ]),
+                if (comprasAsync.isLoading) const LinearProgressIndicator(),
+                if (comprasAsync.hasError)
+                  const Text('No se pudo cargar el historial de compras.'),
+                if (compras.isEmpty)
+                  const Text(
+                      'Registra las compras de este viaje. Los productos anteriores sin historial conservan su stock; no vuelvas a cargar compras ya ingresadas.'),
+                ...compras.map((c) {
+                  final asociados = [
+                    for (final e in encargos.where((e) => e.activo))
+                      for (final d
+                          in e.detalles.where((d) => d.compraId == c.id))
+                        '${clientes.where((cl) => cl.id == e.clienteId).firstOrNull?.nombre ?? 'Venta sin cliente'} · ENC-${e.id} · ${d.cantidad} unidades (${e.estado})'
+                  ];
+                  final comision = base == 0
+                      ? 0
+                      : (simulado *
+                              (c.costoUnitario > 0 ? c.costoUnitario : 1) /
+                              base)
+                          .round();
+                  return Card(
+                      child: Padding(
+                          padding: const EdgeInsets.all(16),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(p.nombre, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textPrimary)),
-                              Text('Base: ${formatCurrencyClp(p.precioVenta ?? 0)} + Costo Log.: ${formatCurrencyClp(roundComision)}', 
-                                style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textSecondary)),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('Precio Final', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-                            Text(formatCurrencyClp(precioFinal), 
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.primary)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(c.nombreProducto,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold)),
+                                Text(
+                                    'Compra #${c.id} · ${formatDateCl(c.fecha)} · ${c.cantidad} unidades'),
+                                _total('Costo unitario', c.costoUnitario),
+                                _total('Inversión de compra',
+                                    c.costoUnitario * c.cantidad),
+                                _total('Logística asignada a esta compra',
+                                    c.gastoAsignado),
+                                _total('Costo unitario estimado con reparto',
+                                    c.costoUnitario + comision),
+                                _total('Precio sugerido con reparto',
+                                    c.precioVenta + comision),
+                                if (asociados.isEmpty)
+                                  const Text('Destino: inventario disponible'),
+                                ...asociados.map((s) => Text(s)),
+                              ])));
                 }),
-
-              const SizedBox(height: 40),
-
-              if (!viaje.distribuido && productosDelViaje.isNotEmpty)
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 56),
-                    backgroundColor: AppColors.secondary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: () async {
-                    final confirmar = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: AppColors.surface,
-                        title: Text('Aplicar Distribución', style: GoogleFonts.outfit(fontWeight: FontWeight.w800)),
-                        content: const Text('¿Deseas fijar estos precios en tu inventario?'),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancelar', style: TextStyle(color: AppColors.textSecondary))),
-                          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Aplicar')),
-                        ],
-                      ),
-                    );
-
-                    if (confirmar == true && mounted) {
-                      await ref.read(distribuirGastosUseCaseProvider).call(widget.viajeId, _montoADistribuir.toInt());
-                      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Inventario actualizado con éxito')));
-                    }
-                  },
-                  icon: const Icon(Icons.check_circle_outline_rounded),
-                  label: Text('Fijar Precios en Inventario', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
-                ),
-              const SizedBox(height: 80),
-            ],
-          );
-        },
-      ),
-    );
+              ]);
+            }));
   }
+
+  Widget _total(String label, int monto) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(children: [
+        Expanded(child: Text(label)),
+        Text(formatCurrencyClp(monto),
+            style: const TextStyle(fontWeight: FontWeight.bold))
+      ]));
 }

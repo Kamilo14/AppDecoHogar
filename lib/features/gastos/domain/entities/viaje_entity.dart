@@ -6,6 +6,9 @@ class Viaje {
   final String destino;
   final String? observaciones;
   final bool distribuido;
+  final int montoDistribuido;
+  int get gastoSinDistribuir =>
+      (totalGastos - montoDistribuido).clamp(0, totalGastos);
   final List<Gasto> gastos;
 
   const Viaje({
@@ -14,6 +17,7 @@ class Viaje {
     required this.destino,
     this.observaciones,
     this.distribuido = false,
+    this.montoDistribuido = 0,
     this.gastos = const [],
   });
 

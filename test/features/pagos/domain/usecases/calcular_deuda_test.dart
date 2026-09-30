@@ -21,15 +21,22 @@ void main() {
           id: 1,
           clienteId: clienteId,
           fecha: DateTime.now(),
-          estado: 'PENDIENTE',
+          estado: 'COMPRADO',
           detalles: [
-            const EncargoDetalle(productoId: 1, cantidad: 1, precioUnitario: 10000),
+            const EncargoDetalle(
+                productoId: 1, cantidad: 1, precioUnitario: 10000),
           ],
         ),
       ];
 
       final pagos = [
-        Pago(id: 1, clienteId: clienteId, monto: 7000, fecha: DateTime.now(), metodo: 'Efectivo', tipo: 'ABONO'),
+        Pago(
+            id: 1,
+            clienteId: clienteId,
+            monto: 7000,
+            fecha: DateTime.now(),
+            metodo: 'Efectivo',
+            tipo: 'ABONO'),
       ];
 
       final resultado = useCase.call(encargos, pagos, clienteId);
@@ -46,13 +53,20 @@ void main() {
           fecha: DateTime.now(),
           estado: 'ENTREGADO',
           detalles: [
-            const EncargoDetalle(productoId: 1, cantidad: 1, precioUnitario: 5000),
+            const EncargoDetalle(
+                productoId: 1, cantidad: 1, precioUnitario: 5000),
           ],
         ),
       ];
 
       final pagos = [
-        Pago(id: 2, clienteId: clienteId, monto: 6000, fecha: DateTime.now(), metodo: 'Transferencia', tipo: 'ABONO'),
+        Pago(
+            id: 2,
+            clienteId: clienteId,
+            monto: 6000,
+            fecha: DateTime.now(),
+            metodo: 'Transferencia',
+            tipo: 'ABONO'),
       ];
 
       final resultado = useCase.call(encargos, pagos, clienteId);
@@ -69,7 +83,8 @@ void main() {
           estado: 'PENDIENTE',
           activo: false, // ELIMINADO
           detalles: [
-            const EncargoDetalle(productoId: 1, cantidad: 1, precioUnitario: 5000),
+            const EncargoDetalle(
+                productoId: 1, cantidad: 1, precioUnitario: 5000),
           ],
         ),
       ];

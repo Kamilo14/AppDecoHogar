@@ -10,32 +10,44 @@ class GetVentasPorDiaMesUseCase {
       // Ventas de las últimas 24 horas (por hora o simplemente hoy)
       final hoy = DateTime(ahora.year, ahora.month, ahora.day);
       final total = encargos
-          .where((e) => e.activo && (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
-          .where((e) => e.fecha.isAfter(hoy) || e.fecha.isAtSameMomentAs(hoy))
+          .where((e) =>
+              e.activo && (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
+          .where((e) =>
+              e.fechaVenta.isAfter(hoy) || e.fechaVenta.isAtSameMomentAs(hoy))
+          .where((e) => e.fechaVenta
+              .isBefore(DateTime(ahora.year, ahora.month, ahora.day + 1)))
           .fold(0, (sum, e) => sum + e.total);
       datos['Hoy'] = total;
-    } 
-    else if (periodo == 'Semana') {
+    } else if (periodo == 'Semana') {
       // Últimos 7 días
       for (int i = 6; i >= 0; i--) {
         final fecha = ahora.subtract(Duration(days: i));
         final label = '${fecha.day}/${fecha.month}';
         final total = encargos
-            .where((e) => e.activo && (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
-            .where((e) => e.fecha.year == fecha.year && e.fecha.month == fecha.month && e.fecha.day == fecha.day)
+            .where((e) =>
+                e.activo &&
+                (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
+            .where((e) =>
+                e.fechaVenta.year == fecha.year &&
+                e.fechaVenta.month == fecha.month &&
+                e.fechaVenta.day == fecha.day)
             .fold(0, (sum, e) => sum + e.total);
         datos[label] = total;
       }
-    } 
-    else {
+    } else {
       // Mes actual (por semanas o bloques de días)
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 5; i++) {
         final label = 'Sem ${i + 1}';
-        // Simplificación: divide el mes en 4 bloques de 7-8 días
+        // Cinco bloques para incluir también los días 29, 30 y 31.
         final total = encargos
-            .where((e) => e.activo && (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
-            .where((e) => e.fecha.year == ahora.year && e.fecha.month == ahora.month)
-            .where((e) => e.fecha.day > (i * 7) && e.fecha.day <= ((i + 1) * 7))
+            .where((e) =>
+                e.activo &&
+                (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
+            .where((e) =>
+                e.fechaVenta.year == ahora.year &&
+                e.fechaVenta.month == ahora.month)
+            .where((e) =>
+                e.fechaVenta.day > (i * 7) && e.fechaVenta.day <= ((i + 1) * 7))
             .fold(0, (sum, e) => sum + e.total);
         datos[label] = total;
       }

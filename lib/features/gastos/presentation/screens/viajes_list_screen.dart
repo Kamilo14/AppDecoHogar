@@ -6,8 +6,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/warm_ui.dart';
-import '../../../productos/domain/entities/producto_entity.dart';
-import '../../../productos/presentation/providers/producto_providers.dart';
 import '../providers/viaje_providers.dart';
 import '../widgets/viaje_form_dialog.dart';
 import 'viaje_detail_screen.dart';
@@ -18,7 +16,7 @@ class ViajesListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final viajesAsync = ref.watch(viajesStreamProvider);
-    final productos = ref.watch(productosStreamProvider).asData?.value ?? const <Producto>[];
+    final compras = ref.watch(comprasStreamProvider).asData?.value ?? [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -28,10 +26,6 @@ class ViajesListScreen extends ConsumerWidget {
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (viajes) {
             final activeViaje = viajes.isNotEmpty ? viajes.first : null;
-            final activeViajeId = activeViaje?.id;
-            final productosDelViaje = activeViajeId == null
-                ? const <Producto>[]
-                : productos.where((p) => p.viajeId == activeViajeId).toList();
 
             return ListView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -54,11 +48,15 @@ class ViajesListScreen extends ConsumerWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.outline),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2))
                         ],
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.add_rounded, color: AppColors.textPrimary, size: 24),
+                        icon: const Icon(Icons.add_rounded,
+                            color: AppColors.textPrimary, size: 24),
                         onPressed: () => showDialog(
                           context: context,
                           builder: (_) => const ViajeFormDialog(),
@@ -77,13 +75,18 @@ class ViajesListScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-
                 if (activeViaje != null) ...[
-                  Text('Último viaje', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary)),
+                  Text('Último viaje',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: AppColors.textPrimary)),
                   const SizedBox(height: 12),
                   WarmSurfaceCard(
                     onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => ViajeDetailScreen(viajeId: activeViaje.id!)),
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              ViajeDetailScreen(viajeId: activeViaje.id!)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,48 +95,82 @@ class ViajesListScreen extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(activeViaje.destino,
-                                style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary)),
+                                style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                    color: AppColors.textPrimary)),
                             WarmPill(
-                              label: activeViaje.distribuido ? 'Cerrado' : 'Pendiente',
-                              color: activeViaje.distribuido ? AppColors.secondary : AppColors.primary,
+                              label: activeViaje.distribuido
+                                  ? 'Cerrado'
+                                  : 'Pendiente',
+                              color: activeViaje.distribuido
+                                  ? AppColors.secondary
+                                  : AppColors.primary,
                             ),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Text(formatDateCl(activeViaje.fecha),
-                            style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textSecondary)),
+                            style: GoogleFonts.outfit(
+                                fontSize: 12, color: AppColors.textSecondary)),
                         const Divider(height: 24, color: AppColors.outline),
-                        WarmInfoRow(label: 'Gastos registrados', value: formatCurrencyClp(activeViaje.totalGastos)),
+                        WarmInfoRow(
+                            label: 'Gastos registrados',
+                            value: formatCurrencyClp(activeViaje.totalGastos)),
+                        WarmInfoRow(
+                            label: 'Inversión en compras',
+                            value: formatCurrencyClp(compras
+                                .where((c) => c.viajeId == activeViaje.id)
+                                .fold<int>(
+                                    0,
+                                    (s, c) =>
+                                        s + c.cantidad * c.costoUnitario))),
                         const SizedBox(height: 4),
-                        WarmInfoRow(label: 'Productos vinculados', value: '${productosDelViaje.length} items'),
+                        WarmInfoRow(
+                            label: 'Compras registradas',
+                            value:
+                                '${compras.where((c) => c.viajeId == activeViaje.id).length}'),
                       ],
                     ),
                   ),
                   const SizedBox(height: 32),
                 ],
-
-                Text('Historial', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary)),
+                Text('Historial',
+                    style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: AppColors.textPrimary)),
                 const SizedBox(height: 12),
                 ...viajes.skip(1).map((viaje) => Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.outline.withValues(alpha: 0.5)),
-                  ),
-                  child: ListTile(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => ViajeDetailScreen(viajeId: viaje.id!)),
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.tertiary.withValues(alpha: 0.1),
-                      child: const Icon(Icons.local_shipping_rounded, color: AppColors.tertiary, size: 20),
-                    ),
-                    title: Text(viaje.destino, style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15)),
-                    subtitle: Text(formatDateCl(viaje.fecha), style: GoogleFonts.outfit(fontSize: 12)),
-                    trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textSecondary),
-                  ),
-                )),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: AppColors.outline.withValues(alpha: 0.5)),
+                      ),
+                      child: ListTile(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  ViajeDetailScreen(viajeId: viaje.id!)),
+                        ),
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              AppColors.tertiary.withValues(alpha: 0.1),
+                          child: const Icon(Icons.local_shipping_rounded,
+                              color: AppColors.tertiary, size: 20),
+                        ),
+                        title: Text(viaje.destino,
+                            style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700, fontSize: 15)),
+                        subtitle: Text(
+                            '${formatDateCl(viaje.fecha)}\nCompras: ${formatCurrencyClp(compras.where((c) => c.viajeId == viaje.id).fold<int>(0, (s, c) => s + c.cantidad * c.costoUnitario))} · Gastos: ${formatCurrencyClp(viaje.totalGastos)}',
+                            style: GoogleFonts.outfit(fontSize: 12)),
+                        trailing: const Icon(Icons.chevron_right_rounded,
+                            size: 20, color: AppColors.textSecondary),
+                      ),
+                    )),
                 const SizedBox(height: 80),
               ],
             );
