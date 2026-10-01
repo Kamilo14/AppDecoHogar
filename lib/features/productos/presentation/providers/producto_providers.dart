@@ -88,8 +88,8 @@ final stockLibreProvider = Provider<Map<int, int>>((ref) {
     for (final p in productos)
       if (p.id != null) p.id!: p.cantidadDisponible
   };
-  for (final e in encargos.where(
-      (e) => e.activo && e.estado != 'ENTREGADO' && e.estado != 'FINALIZADO')) {
+  for (final e in encargos.where((e) =>
+      e.activo && e.tipoVenta != 'Por encargo' && e.estado != 'ENTREGADO')) {
     for (final d
         in e.detalles.where((d) => d.comprado && d.productoId != null)) {
       libres.update(d.productoId!, (n) => n - d.cantidad, ifAbsent: () => 0);

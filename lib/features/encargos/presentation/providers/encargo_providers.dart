@@ -27,15 +27,18 @@ final saveEncargoUseCaseProvider = Provider<SaveEncargoUseCase>((ref) {
   return SaveEncargoUseCase(ref.watch(encargoRepositoryProvider));
 });
 
-final cambiarEstadoEncargoUseCaseProvider = Provider<CambiarEstadoEncargoUseCase>((ref) {
+final cambiarEstadoEncargoUseCaseProvider =
+    Provider<CambiarEstadoEncargoUseCase>((ref) {
   return CambiarEstadoEncargoUseCase(ref.watch(encargoRepositoryProvider));
 });
 
-final convertirEncargoAVentaUseCaseProvider = Provider<ConvertirEncargoAVentaUseCase>((ref) {
+final convertirEncargoAVentaUseCaseProvider =
+    Provider<ConvertirEncargoAVentaUseCase>((ref) {
   return ConvertirEncargoAVentaUseCase(ref.watch(encargoRepositoryProvider));
 });
 
-final softDeleteEncargoUseCaseProvider = Provider<SoftDeleteEncargoUseCase>((ref) {
+final softDeleteEncargoUseCaseProvider =
+    Provider<SoftDeleteEncargoUseCase>((ref) {
   return SoftDeleteEncargoUseCase(ref.watch(encargoRepositoryProvider));
 });
 
@@ -47,5 +50,4 @@ final estadosEncargoProvider = Provider<List<String>>((ref) => const [
       'PENDIENTE',
       'COMPRADO',
       'ENTREGADO',
-      'FINALIZADO',
     ]);

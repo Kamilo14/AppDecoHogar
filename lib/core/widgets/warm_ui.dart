@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -6,7 +8,8 @@ class WarmSectionHeader extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
-  const WarmSectionHeader({super.key, required this.title, this.actionLabel, this.onAction});
+  const WarmSectionHeader(
+      {super.key, required this.title, this.actionLabel, this.onAction});
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +62,7 @@ class WarmSurfaceCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cardColor = color ?? theme.cardTheme.color;
     final content = Padding(padding: padding, child: child);
-    
+
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(borderRadius),
     );
@@ -244,10 +247,6 @@ class WarmStatusChip extends StatelessWidget {
         color = const Color(0xFF6E7E52);
         label = 'Entregado';
         break;
-      case 'FINALIZADO':
-        color = Colors.blueGrey;
-        label = 'Finalizado';
-        break;
       default:
         color = Colors.grey;
     }
@@ -272,7 +271,8 @@ class WarmClienteAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = tieneDeuda ? const Color(0xFFD67C52) : const Color(0xFF6E7E52);
+    final color =
+        tieneDeuda ? const Color(0xFFD67C52) : const Color(0xFF6E7E52);
     final inicial = nombre.isNotEmpty ? nombre[0].toUpperCase() : '?';
     final double effectiveRadius = size != null ? size! / 2 : radius;
 
@@ -313,8 +313,10 @@ class WarmTabBar extends StatelessWidget {
         tabs: tabs,
         labelColor: theme.colorScheme.primary,
         unselectedLabelColor: const Color(0xFF2C221E).withAlpha(150),
-        labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 14),
-        unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14),
+        labelStyle:
+            GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 14),
+        unselectedLabelStyle:
+            GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14),
         indicatorColor: theme.colorScheme.primary,
         indicatorWeight: 3,
         indicatorSize: TabBarIndicatorSize.label,
@@ -344,7 +346,9 @@ class WarmInfoRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.textTheme.bodyLarge?.color?.withAlpha(128))),
+          Text(label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodyLarge?.color?.withAlpha(128))),
           Text(
             value,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -353,6 +357,48 @@ class WarmInfoRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class AppBackground extends StatelessWidget {
+  final Widget child;
+  final bool showFondo;
+  final String imagePath;
+
+  const AppBackground({
+    super.key,
+    required this.child,
+    this.showFondo = true,
+    this.imagePath = 'assets/images/fondo2.png',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showFondo) return child;
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(
+              sigmaX: 3,
+              sigmaY: 3,
+            ),
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: Container(
+            color: Colors.white.withOpacity(0.35),
+          ),
+        ),
+        child,
+      ],
     );
   }
 }

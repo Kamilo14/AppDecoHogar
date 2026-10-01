@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../providers/auth_providers.dart';
@@ -42,14 +43,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     if (_passCtrl.text.isEmpty || _isLoading) return;
     setState(() => _isLoading = true);
-    final esValida = await ref.read(verifyPasswordUseCaseProvider).call(_passCtrl.text);
+    final esValida =
+        await ref.read(verifyPasswordUseCaseProvider).call(_passCtrl.text);
     if (esValida) {
-      if (mounted) ref.read(authStateProvider.notifier).state = AuthState.authenticated;
+      if (mounted)
+        ref.read(authStateProvider.notifier).state = AuthState.authenticated;
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Contraseña incorrecta', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+            content: Text('Contraseña incorrecta',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
             behavior: SnackBarBehavior.floating,
             backgroundColor: const Color(0xFF8B4513),
           ),
@@ -68,16 +72,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           '¿Olvidaste tu contraseña?',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: const Color(0xFF26301F)),
+          style: GoogleFonts.outfit(
+              fontWeight: FontWeight.w800, color: const Color(0xFF26301F)),
         ),
         content: Text(
           'Por seguridad y al ser una app 100% local, no hay forma de recuperar la contraseña.\n\nLa única opción es borrar los datos de la aplicación y volver a registrarte.',
-          style: GoogleFonts.outfit(color: const Color(0xFF3F4338), height: 1.4),
+          style:
+              GoogleFonts.outfit(color: const Color(0xFF3F4338), height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Entendido', style: GoogleFonts.outfit(fontWeight: FontWeight.w700, color: AppColors.primary)),
+            child: Text('Entendido',
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w700, color: AppColors.primary)),
           ),
         ],
       ),
@@ -115,7 +123,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         decoration: InputDecoration(
           border: InputBorder.none,
-          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 23, color: Color(0xFF3F4C30)),
+          prefixIcon: const Icon(Icons.lock_outline_rounded,
+              size: 23, color: Color(0xFF3F4C30)),
           hintText: 'Contraseña',
           hintStyle: GoogleFonts.outfit(
             color: const Color(0xFF4A4D42),
@@ -123,7 +132,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
         ),
         onSubmitted: (_) => _login(),
       ),
@@ -140,10 +150,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/login_deco_hogar.png',
+              'assets/login_deco_hogar.png',
               fit: BoxFit.cover,
               alignment: Alignment.center,
-              errorBuilder: (context, error, stackTrace) => Container(color: AppColors.background),
+              errorBuilder: (context, error, stackTrace) =>
+                  Container(color: AppColors.background),
             ),
           ),
           Positioned.fill(
@@ -169,7 +180,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
                     child: Column(
                       children: [
                         SizedBox(height: size.height * 0.44),
@@ -180,7 +192,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             children: [
                               usuarioAsync.when(
                                 data: (u) => Text(
-                                  (u?.primerNombre ?? '').isEmpty ? '¡Hola de nuevo!' : '¡Hola de nuevo, ${u!.primerNombre}!',
+                                  (u?.primerNombre ?? '').isEmpty
+                                      ? '¡Hola de nuevo!'
+                                      : '¡Hola de nuevo, ${u!.primerNombre}!',
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.outfit(
                                     fontSize: 24,
@@ -233,26 +247,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   onPressed: _isLoading ? null : _login,
                                   style: FilledButton.styleFrom(
                                     backgroundColor: AppColors.primary,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(18)),
                                     elevation: 2,
                                   ),
-                                  child: _isLoading 
-                                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                                    : Text('Iniciar sesión', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w800)),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              color: Colors.white))
+                                      : Text('Iniciar sesión',
+                                          style: GoogleFonts.outfit(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w800)),
                                 ),
                               ),
                               const SizedBox(height: 24),
                               Row(
                                 children: [
-                                  Expanded(child: Divider(color: const Color(0xFF3F4C30).withOpacity(0.2))),
+                                  Expanded(
+                                      child: Divider(
+                                          color: const Color(0xFF3F4C30)
+                                              .withOpacity(0.2))),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16),
                                     child: Text(
                                       'o continúa con',
-                                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF4A4D42)),
+                                      style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF4A4D42)),
                                     ),
                                   ),
-                                  Expanded(child: Divider(color: const Color(0xFF3F4C30).withOpacity(0.2))),
+                                  Expanded(
+                                      child: Divider(
+                                          color: const Color(0xFF3F4C30)
+                                              .withOpacity(0.2))),
                                 ],
                               ),
                               const SizedBox(height: 24),
@@ -262,30 +296,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   onPressed: _intentarBiometria,
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: const Color(0xFF354229),
-                                    backgroundColor: Colors.white.withOpacity(0.4),
-                                    side: BorderSide(color: const Color(0xFF3F4C30).withOpacity(0.6), width: 1.5),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.4),
+                                    side: BorderSide(
+                                        color: const Color(0xFF3F4C30)
+                                            .withOpacity(0.6),
+                                        width: 1.5),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(18)),
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(Icons.fingerprint_rounded, size: 28, color: Color(0xFF3F4C30)),
+                                      const Icon(Icons.fingerprint_rounded,
+                                          size: 28, color: Color(0xFF3F4C30)),
                                       const SizedBox(width: 10),
-                                      Text('Usar huella digital', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w600)),
+                                      Text('Usar huella digital',
+                                          style: GoogleFonts.outfit(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600)),
                                     ],
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 32),
-                              RichText(
-                                textAlign: TextAlign.center,
-                                text: TextSpan(
-                                  style: GoogleFonts.outfit(fontSize: 13, color: const Color(0xFF3F4338), fontWeight: FontWeight.w500),
-                                  children: [
-                                    const TextSpan(text: '¿Aún no tienes cuenta? '),
-                                    TextSpan(text: 'Créala aquí', style: GoogleFonts.outfit(color: const Color(0xFF9A5528), fontWeight: FontWeight.w700)),
-                                  ],
-                                ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '¿Aún no tienes cuenta?',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      color: const Color(0xFF3F4338),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => context.go('/register'),
+                                    child: Text(
+                                      'Créala aquí',
+                                      style: GoogleFonts.outfit(
+                                        color: const Color(0xFF9A5528),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 32),
                             ],

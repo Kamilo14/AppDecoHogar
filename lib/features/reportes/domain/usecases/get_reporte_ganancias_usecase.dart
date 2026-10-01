@@ -31,10 +31,10 @@ class GetReporteGananciasUseCase {
       return sum + (costo * p.cantidadDisponible);
     });
 
-    // 2. Ventas totales (solo Entregados/Finalizados)
+    // 2. Ventas totales.
     final ventasRealizadas = encargos
         .where((e) =>
-            e.activo && (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
+            e.activo && e.tipoVenta != 'Por encargo' && e.estado == 'ENTREGADO')
         .toList();
 
     int totalVendido = 0;

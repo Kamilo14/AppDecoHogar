@@ -16,83 +16,78 @@ class PagosListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clientes = ref.watch(clientesStreamProvider).asData?.value ?? const [];
+    final clientes =
+        ref.watch(clientesStreamProvider).asData?.value ?? const [];
     final pagosAsync = ref.watch(pagosStreamProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: pagosAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Error: $error')),
-          data: (pagos) {
-            return ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Pagos',
-                      style: GoogleFonts.outfit(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.8,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: pagosAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(child: Text('Error: $error')),
+            data: (pagos) {
+              return ListView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Pagos',
+                        style: GoogleFonts.outfit(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.8,
+                        ),
                       ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.outline),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.receipt_long_rounded, color: AppColors.textPrimary, size: 22),
-                        onPressed: () {},
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Historial de abonos y pagos recibidos.',
-                  style: GoogleFonts.outfit(
-                    fontSize: 15,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                    ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                if (pagos.isEmpty)
-                  _buildEmptyState()
-                else
-                  ...pagos.map((pago) {
-                    final cliente = clientes.firstWhere(
-                      (c) => c.id == pago.clienteId,
-                      orElse: () => Cliente(nombre: 'Cliente Desconocido', fechaRegistro: DateTime.now()),
-                    );
-                    return _PagoCard(pago: pago, clienteNombre: cliente.nombre);
-                  }),
-                const SizedBox(height: 80),
-              ],
-            );
-          },
+                  const SizedBox(height: 8),
+                  Text(
+                    'Historial de abonos y pagos recibidos.',
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (pagos.isEmpty)
+                    _buildEmptyState()
+                  else
+                    ...pagos.map((pago) {
+                      final cliente = clientes.firstWhere(
+                        (c) => c.id == pago.clienteId,
+                        orElse: () => Cliente(
+                            nombre: 'Cliente Desconocido',
+                            fechaRegistro: DateTime.now()),
+                      );
+                      return _PagoCard(
+                          pago: pago, clienteNombre: cliente.nombre);
+                    }),
+                  const SizedBox(height: 80),
+                ],
+              );
+            },
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PagoFormScreen()),
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PagoFormScreen()),
+          ),
+          icon: const Icon(Icons.add),
+          label: Text('Registrar Pago',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
         ),
-        icon: const Icon(Icons.add),
-        label: Text('Registrar Pago', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -108,11 +103,14 @@ class PagosListScreen extends ConsumerWidget {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.payments_outlined, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.3)),
+            Icon(Icons.payments_outlined,
+                size: 48,
+                color: AppColors.textSecondary.withValues(alpha: 0.3)),
             const SizedBox(height: 16),
             Text(
               'Aún no hay pagos registrados',
-              style: GoogleFonts.outfit(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+              style: GoogleFonts.outfit(
+                  color: AppColors.textSecondary, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -142,7 +140,8 @@ class _PagoCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => PagoFormScreen(pagoExistente: pago)),
+              MaterialPageRoute(
+                  builder: (_) => PagoFormScreen(pagoExistente: pago)),
             );
           },
           child: Padding(
@@ -156,7 +155,8 @@ class _PagoCard extends StatelessWidget {
                     color: AppColors.secondary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check_circle_outline_rounded, color: AppColors.secondary, size: 24),
+                  child: const Icon(Icons.check_circle_outline_rounded,
+                      color: AppColors.secondary, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -165,19 +165,26 @@ class _PagoCard extends StatelessWidget {
                     children: [
                       Text(
                         clienteNombre,
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.textPrimary),
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: AppColors.textPrimary),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         '${formatDateCl(pago.fecha)} • ${pago.metodo}',
-                        style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textSecondary),
+                        style: GoogleFonts.outfit(
+                            fontSize: 12, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
                 ),
                 Text(
                   formatCurrencyClp(pago.monto),
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 18, color: AppColors.textPrimary),
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: AppColors.textPrimary),
                 ),
               ],
             ),

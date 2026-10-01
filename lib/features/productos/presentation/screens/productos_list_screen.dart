@@ -24,123 +24,128 @@ class ProductosListScreen extends ConsumerWidget {
     final categoriasAsync = ref.watch(categoriasStreamProvider);
     final categorias = categoriasAsync.asData?.value ?? const <Categoria>[];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: productosAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Error: $error')),
-          data: (productos) {
-            return ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Productos',
-                      style: GoogleFonts.outfit(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.8,
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.outline),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2))
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.category_rounded,
-                            color: AppColors.textPrimary, size: 22),
-                        onPressed: () => _showCategoriasManager(context, ref),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // Buscador
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4))
-                    ],
-                  ),
-                  child: TextField(
-                    onChanged: (v) =>
-                        ref.read(productoSearchProvider.notifier).state = v,
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar productos...',
-                      hintStyle: GoogleFonts.outfit(
-                          color:
-                              AppColors.textSecondary.withValues(alpha: 0.6)),
-                      prefixIcon: const Icon(Icons.search_rounded,
-                          color: AppColors.primary, size: 22),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Filtros de Categoría
-                SizedBox(
-                  height: 40,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: productosAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(child: Text('Error: $error')),
+            data: (productos) {
+              return ListView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildFilterChip(ref, 'Todos', null, categoriaId == null),
-                      ...categorias.map((cat) => _buildFilterChip(
-                          ref, cat.nombre, cat.id, categoriaId == cat.id)),
+                      Text(
+                        'Productos',
+                        style: GoogleFonts.outfit(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.outline),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2))
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.category_rounded,
+                              color: AppColors.textPrimary, size: 22),
+                          onPressed: () => _showCategoriasManager(context, ref),
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                if (productos.isEmpty)
-                  _buildEmptyState()
-                else
-                  ...productos.map((producto) {
-                    final catNombre = categorias
-                        .firstWhere((c) => c.id == producto.categoriaId,
-                            orElse: () =>
-                                const Categoria(nombre: 'Sin categoría'))
-                        .nombre;
-                    return _ProductoTile(
-                        producto: producto,
-                        categoriaNombre: catNombre,
-                        disponibles: stockLibre[producto.id] ?? 0);
-                  }),
-                const SizedBox(height: 80),
-              ],
-            );
-          },
+                  const SizedBox(height: 24),
+                  // Buscador
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4))
+                      ],
+                    ),
+                    child: TextField(
+                      onChanged: (v) =>
+                          ref.read(productoSearchProvider.notifier).state = v,
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar productos...',
+                        hintStyle: GoogleFonts.outfit(
+                            color:
+                                AppColors.textSecondary.withValues(alpha: 0.6)),
+                        prefixIcon: const Icon(Icons.search_rounded,
+                            color: AppColors.primary, size: 22),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Filtros de Categoría
+                  SizedBox(
+                    height: 40,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        _buildFilterChip(
+                            ref, 'Todos', null, categoriaId == null),
+                        ...categorias.map((cat) => _buildFilterChip(
+                            ref, cat.nombre, cat.id, categoriaId == cat.id)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (productos.isEmpty)
+                    _buildEmptyState()
+                  else
+                    ...productos.map((producto) {
+                      final catNombre = categorias
+                          .firstWhere((c) => c.id == producto.categoriaId,
+                              orElse: () =>
+                                  const Categoria(nombre: 'Sin categoría'))
+                          .nombre;
+                      return _ProductoTile(
+                          producto: producto,
+                          categoriaNombre: catNombre,
+                          disponibles: stockLibre[producto.id] ?? 0);
+                    }),
+                  const SizedBox(height: 80),
+                ],
+              );
+            },
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: const CircleBorder(),
-        onPressed: () => showDialog(
-          context: context,
-          builder: (_) => const ProductoFormDialog(),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: const CircleBorder(),
+          onPressed: () => showDialog(
+            context: context,
+            builder: (_) => const ProductoFormDialog(),
+          ),
+          child: const Icon(Icons.add, size: 28),
         ),
-        child: const Icon(Icons.add, size: 28),
       ),
     );
   }

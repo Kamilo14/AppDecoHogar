@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/warm_ui.dart';
 import '../../../clientes/domain/entities/cliente_entity.dart';
@@ -30,98 +29,84 @@ class _EncargosListScreenState extends ConsumerState<EncargosListScreen> {
     final clientes =
         ref.watch(clientesStreamProvider).asData?.value ?? const [];
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: encargosAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Error: $error')),
-          data: (encargos) {
-            final filtrados = encargos.where((e) {
-              if (_filtroEstado == null) return e.activo;
-              return e.activo &&
-                  e.estado.toUpperCase() == _filtroEstado!.toUpperCase();
-            }).toList();
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: encargosAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(child: Text('Error: $error')),
+            data: (encargos) {
+              final filtrados = encargos.where((e) {
+                if (e.tipoVenta != 'Por encargo') return false;
+                if (_filtroEstado == null) return e.activo;
+                return e.activo &&
+                    e.estado.toUpperCase() == _filtroEstado!.toUpperCase();
+              }).toList();
 
-            return ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Encargos',
-                      style: GoogleFonts.outfit(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.8,
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.outline),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2))
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.tune_rounded,
-                            color: AppColors.textPrimary, size: 22),
-                        onPressed: () {},
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // Filter Chips
-                SizedBox(
-                  height: 40,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
+              return ListView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildFilterChip('Todos', null),
-                      _buildFilterChip('Pendiente', 'PENDIENTE'),
-                      _buildFilterChip('Comprado', 'COMPRADO'),
-                      _buildFilterChip('Entregado', 'ENTREGADO'),
+                      Text(
+                        'Encargos',
+                        style: GoogleFonts.outfit(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-                if (filtrados.isEmpty)
-                  _buildEmptyState()
-                else
-                  ...filtrados.map((encargo) {
-                    final cliente = clientes.firstWhere(
-                      (c) => c.id == encargo.clienteId,
-                      orElse: () => Cliente(
-                          nombre: 'Cliente Desconocido',
-                          fechaRegistro: DateTime.now()),
-                    );
-                    return _EncargoCard(
-                        encargo: encargo, clienteNombre: cliente.nombre);
-                  }),
-              ],
+                  const SizedBox(height: 24),
+                  // Filter Chips
+                  SizedBox(
+                    height: 40,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        _buildFilterChip('Todos', null),
+                        _buildFilterChip('Pendiente', 'PENDIENTE'),
+                        _buildFilterChip('Comprado', 'COMPRADO'),
+                        _buildFilterChip('Entregado', 'ENTREGADO'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (filtrados.isEmpty)
+                    _buildEmptyState()
+                  else
+                    ...filtrados.map((encargo) {
+                      final cliente = clientes.firstWhere(
+                        (c) => c.id == encargo.clienteId,
+                        orElse: () => Cliente(
+                            nombre: 'Cliente Desconocido',
+                            fechaRegistro: DateTime.now()),
+                      );
+                      return _EncargoCard(
+                          encargo: encargo, clienteNombre: cliente.nombre);
+                    }),
+                ],
+              );
+            },
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shape: const CircleBorder(),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const EncargoFormScreen()),
             );
           },
+          child: const Icon(Icons.add, size: 28),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: const CircleBorder(),
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const EncargoFormScreen()),
-          );
-        },
-        child: const Icon(Icons.add, size: 28),
       ),
     );
   }
@@ -231,10 +216,10 @@ class _EncargoCard extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      formatCurrencyClp(encargo.total),
+                      '${encargo.detalles.length} item(s)',
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w900,
-                        fontSize: 18,
+                        fontSize: 15,
                         color: AppColors.textPrimary,
                       ),
                     ),

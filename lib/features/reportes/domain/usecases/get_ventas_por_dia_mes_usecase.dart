@@ -11,7 +11,9 @@ class GetVentasPorDiaMesUseCase {
       final hoy = DateTime(ahora.year, ahora.month, ahora.day);
       final total = encargos
           .where((e) =>
-              e.activo && (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
+              e.activo &&
+              e.tipoVenta != 'Por encargo' &&
+              e.estado == 'ENTREGADO')
           .where((e) =>
               e.fechaVenta.isAfter(hoy) || e.fechaVenta.isAtSameMomentAs(hoy))
           .where((e) => e.fechaVenta
@@ -26,7 +28,8 @@ class GetVentasPorDiaMesUseCase {
         final total = encargos
             .where((e) =>
                 e.activo &&
-                (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
+                e.tipoVenta != 'Por encargo' &&
+                e.estado == 'ENTREGADO')
             .where((e) =>
                 e.fechaVenta.year == fecha.year &&
                 e.fechaVenta.month == fecha.month &&
@@ -42,7 +45,8 @@ class GetVentasPorDiaMesUseCase {
         final total = encargos
             .where((e) =>
                 e.activo &&
-                (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO'))
+                e.tipoVenta != 'Por encargo' &&
+                e.estado == 'ENTREGADO')
             .where((e) =>
                 e.fechaVenta.year == ahora.year &&
                 e.fechaVenta.month == ahora.month)

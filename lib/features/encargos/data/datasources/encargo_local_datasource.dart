@@ -32,8 +32,7 @@ class EncargoLocalDataSource {
         });
   }
 
-  bool _entregado(String estado) =>
-      estado == 'ENTREGADO' || estado == 'FINALIZADO';
+  bool _entregado(String estado) => estado == 'ENTREGADO';
 
   Future<int> saveEncargo(domain.Encargo encargo,
       {int? montoPagoInicial,
@@ -57,6 +56,9 @@ class EncargoLocalDataSource {
         if (pagos.isNotEmpty)
           throw ValidationFailure(
               'No se puede cambiar el cliente de un encargo con pagos.');
+      }
+      if (encargo.tipoVenta == 'Por encargo') {
+        return _saveEncargoRecordatorio(encargo, previo);
       }
       final detalles = <domain.EncargoDetalle>[];
       final ocupacion = await _db.customSelect('''
@@ -355,9 +357,6 @@ class EncargoLocalDataSource {
       if (monto < 0 || monto > saldo)
         throw ValidationFailure(
             'El abono no puede superar el saldo pendiente.');
-      if (estado == 'FINALIZADO' && monto < saldo)
-        throw ValidationFailure(
-            'Para finalizar, registra el pago del saldo pendiente.');
       if (monto > 0 && encargo.clienteId != null) {
         await _db.into(_db.pagos).insert(db.PagosCompanion.insert(
             clienteId: encargo.clienteId!,
@@ -370,6 +369,80 @@ class EncargoLocalDataSource {
       }
       return id;
     });
+  }
+
+  Future<int> _saveEncargoRecordatorio(
+      domain.Encargo encargo, domain.Encargo? previo) async {
+    final estado = encargo.estado == 'FINALIZADO'
+        ? 'ENTREGADO'
+        : encargo.estado.toUpperCase();
+    final estadoValido =
+        estado == 'PENDIENTE' || estado == 'COMPRADO' || estado == 'ENTREGADO';
+    if (!estadoValido) {
+      throw ValidationFailure('Estado de encargo no válido.');
+    }
+
+    var correlativo = previo?.correlativoCliente ?? 1;
+    if (previo == null && encargo.clienteId != null) {
+      final ultimo = await (_db.select(_db.encargos)
+            ..where((e) => e.clienteId.equals(encargo.clienteId!))
+            ..orderBy([(e) => OrderingTerm.desc(e.correlativoCliente)])
+            ..limit(1))
+          .getSingleOrNull();
+      correlativo = (ultimo?.correlativoCliente ?? 0) + 1;
+    }
+
+    final values = db.EncargosCompanion(
+      clienteId: Value(encargo.clienteId),
+      correlativoCliente: Value(correlativo),
+      fecha: Value(encargo.fecha),
+      fechaEntregaReal: Value(
+        estado == 'ENTREGADO'
+            ? previo?.fechaEntregaReal ?? DateTime.now()
+            : null,
+      ),
+      fechaEntregaEstimada: Value(encargo.fechaEntregaEstimada),
+      estado: Value(estado),
+      observaciones: Value(encargo.observaciones),
+      tipoVenta: const Value('Por encargo'),
+      activo: Value(encargo.activo),
+    );
+
+    final id = previo?.id ?? await _db.into(_db.encargos).insert(values);
+    if (previo != null) {
+      await (_db.update(_db.encargos)..where((e) => e.id.equals(id)))
+          .write(values);
+      await (_db.delete(_db.encargoDetalle)
+            ..where((d) => d.encargoId.equals(id)))
+          .go();
+    }
+
+    for (final d in encargo.detalles) {
+      if (d.cantidad <= 0) {
+        throw ValidationFailure('La cantidad debe ser mayor a cero.');
+      }
+      final nombre = d.nombreTemporal?.trim();
+      if (d.productoId == null && (nombre == null || nombre.isEmpty)) {
+        throw ValidationFailure('Escribe el producto solicitado.');
+      }
+      await _db.into(_db.encargoDetalle).insert(
+            db.EncargoDetalleCompanion.insert(
+              encargoId: id,
+              productoId: Value(d.productoId),
+              nombreTemporal: Value(nombre),
+              cantidad: d.cantidad,
+              cantidadComprada: Value(d.unidadesCompradas),
+              compraId: Value(d.compraId),
+              costoLogistica: Value(d.costoLogistica),
+              comprado: Value(
+                  d.comprado || estado == 'COMPRADO' || estado == 'ENTREGADO'),
+              precioUnitario: Value(d.precioUnitario),
+              costoUnitario: Value(d.costoUnitario),
+            ),
+          );
+    }
+
+    return id;
   }
 
   Future<void> changeEstadoEncargo(int encargoId, String nuevoEstado) async {

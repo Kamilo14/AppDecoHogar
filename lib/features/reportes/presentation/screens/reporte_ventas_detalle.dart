@@ -36,7 +36,8 @@ class _ReporteVentasState extends ConsumerState<ReporteVentasDetalle> {
     final ventas = eAsync.requireValue
         .where((e) =>
             e.activo &&
-            (e.estado == 'ENTREGADO' || e.estado == 'FINALIZADO') &&
+            e.tipoVenta != 'Por encargo' &&
+            e.estado == 'ENTREGADO' &&
             periodo.contiene(e.fechaVenta))
         .toList()
       ..sort((a, b) => b.fechaVenta.compareTo(a.fechaVenta));

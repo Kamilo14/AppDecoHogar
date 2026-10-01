@@ -17,7 +17,8 @@ class CompartirCatalogoScreen extends StatefulWidget {
   const CompartirCatalogoScreen({super.key, required this.productos});
 
   @override
-  State<CompartirCatalogoScreen> createState() => _CompartirCatalogoScreenState();
+  State<CompartirCatalogoScreen> createState() =>
+      _CompartirCatalogoScreenState();
 }
 
 class _CompartirCatalogoScreenState extends State<CompartirCatalogoScreen> {
@@ -36,7 +37,9 @@ class _CompartirCatalogoScreenState extends State<CompartirCatalogoScreen> {
         text: subject ?? 'Catálogo DECORA TU HOGAR',
       );
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _compartiendo = false);
     }
@@ -44,73 +47,114 @@ class _CompartirCatalogoScreenState extends State<CompartirCatalogoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text('Preparar para Compartir', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+    return AppBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textPrimary,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                WarmSurfaceCard(
-                  child: Column(
-                    children: [
-                      Text('VISTA PREVIA DEL PDF', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 1)),
-                      const SizedBox(height: 20),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(16)),
-                        child: Column(
-                          children: [
-                            Text('DECORA TU HOGAR', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 18)),
-                            const Divider(height: 32),
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: widget.productos.take(4).length,
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12),
-                              itemBuilder: (context, i) => Container(
-                                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(8)),
-                                child: Icon(Icons.image_outlined, color: AppColors.textSecondary.withValues(alpha: 0.3)),
+        appBar: AppBar(
+          title: Text('Preparar para Compartir',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: AppColors.textPrimary,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  WarmSurfaceCard(
+                    child: Column(
+                      children: [
+                        Text('VISTA PREVIA DEL PDF',
+                            style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 1)),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(16)),
+                          child: Column(
+                            children: [
+                              Text('DECORA TU HOGAR',
+                                  style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.primary,
+                                      fontSize: 18)),
+                              const Divider(height: 32),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: widget.productos.take(4).length,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 12,
+                                        mainAxisSpacing: 12),
+                                itemBuilder: (context, i) => Container(
+                                  decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(8)),
+                                  child: Icon(Icons.image_outlined,
+                                      color: AppColors.textSecondary
+                                          .withValues(alpha: 0.3)),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text('Enviar por:',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: AppColors.textPrimary)),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _ShareIcon(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          label: 'WhatsApp',
+                          onTap: () => _compartirCatalogo()),
+                      _ShareIcon(
+                          icon: Icons.camera_alt_outlined,
+                          label: 'Instagram',
+                          onTap: () => _compartirCatalogo()),
+                      _ShareIcon(
+                          icon: Icons.email_outlined,
+                          label: 'Correo',
+                          onTap: () => _compartirCatalogo()),
                     ],
                   ),
-                ),
-                const SizedBox(height: 32),
-                Text('Enviar por:', style: GoogleFonts.outfit(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary)),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _ShareIcon(icon: Icons.chat_bubble_outline_rounded, label: 'WhatsApp', onTap: () => _compartirCatalogo()),
-                    _ShareIcon(icon: Icons.camera_alt_outlined, label: 'Instagram', onTap: () => _compartirCatalogo()),
-                    _ShareIcon(icon: Icons.email_outlined, label: 'Correo', onTap: () => _compartirCatalogo()),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: AppColors.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
-              onPressed: _compartiendo ? null : () => _compartirCatalogo(),
-              icon: const Icon(Icons.share_rounded),
-              label: Text(_compartiendo ? 'Generando PDF...' : 'Compartir Catálogo', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24))),
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 56)),
+                onPressed: _compartiendo ? null : () => _compartirCatalogo(),
+                icon: const Icon(Icons.share_rounded),
+                label: Text(
+                    _compartiendo ? 'Generando PDF...' : 'Compartir Catálogo',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -120,7 +164,8 @@ class _ShareIcon extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _ShareIcon({required this.icon, required this.label, required this.onTap});
+  const _ShareIcon(
+      {required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -130,11 +175,18 @@ class _ShareIcon extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.surface, shape: BoxShape.circle, border: Border.all(color: AppColors.outline)),
+            decoration: BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.outline)),
             child: Icon(icon, color: AppColors.primary),
           ),
           const SizedBox(height: 8),
-          Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          Text(label,
+              style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
         ],
       ),
     );

@@ -19,118 +19,120 @@ class ClientesListScreen extends ConsumerWidget {
     final query = ref.watch(clienteSearchProvider);
     final clientesAsync = ref.watch(clientesFiltradosProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: clientesAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (clientes) {
-            return CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Clientes',
-                              style: GoogleFonts.outfit(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                                letterSpacing: -0.8,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: clientesAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (clientes) {
+              return CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Clientes',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                  letterSpacing: -0.8,
+                                ),
                               ),
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.outline),
-                                boxShadow: [
-                                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))
-                                ],
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.tune_rounded, color: AppColors.textPrimary, size: 22),
-                                onPressed: () {},
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        // Buscador Estilizado
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
                             ],
                           ),
-                          child: TextField(
-                            onChanged: (v) => ref.read(clienteSearchProvider.notifier).state = v,
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
-                            decoration: InputDecoration(
-                              hintText: 'Buscar por nombre...',
-                              hintStyle: GoogleFonts.outfit(color: AppColors.textSecondary.withOpacity(0.6)),
-                              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary, size: 22),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                              suffixIcon: query.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.close_rounded, size: 20),
-                                      onPressed: () => ref.read(clienteSearchProvider.notifier).state = '',
-                                    )
-                                  : null,
+                          const SizedBox(height: 24),
+                          // Buscador Estilizado
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withOpacity(0.02),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4))
+                              ],
+                            ),
+                            child: TextField(
+                              onChanged: (v) => ref
+                                  .read(clienteSearchProvider.notifier)
+                                  .state = v,
+                              style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.w500),
+                              decoration: InputDecoration(
+                                hintText: 'Buscar por nombre...',
+                                hintStyle: GoogleFonts.outfit(
+                                    color: AppColors.textSecondary
+                                        .withOpacity(0.6)),
+                                prefixIcon: const Icon(Icons.search_rounded,
+                                    color: AppColors.primary, size: 22),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                suffixIcon: query.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.close_rounded,
+                                            size: 20),
+                                        onPressed: () => ref
+                                            .read(
+                                                clienteSearchProvider.notifier)
+                                            .state = '',
+                                      )
+                                    : null,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
-                  ),
-                ),
-                if (clientes.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _EmptyClients(query: query),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _ClienteTile(cliente: clientes[index]),
-                        ),
-                        childCount: clientes.length,
+                          const SizedBox(height: 32),
+                        ],
                       ),
                     ),
                   ),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
-              ],
-            );
-          },
+                  if (clientes.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _EmptyClients(query: query),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _ClienteTile(cliente: clientes[index]),
+                          ),
+                          childCount: clientes.length,
+                        ),
+                      ),
+                    ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                ],
+              );
+            },
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 6,
-        shape: const CircleBorder(),
-        onPressed: () => showDialog(
-          context: context,
-          builder: (_) => const ClienteFormDialog(),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 6,
+          shape: const CircleBorder(),
+          onPressed: () => showDialog(
+            context: context,
+            builder: (_) => const ClienteFormDialog(),
+          ),
+          child: const Icon(Icons.add, size: 28),
         ),
-        child: const Icon(Icons.add, size: 28),
       ),
     );
   }
@@ -142,7 +144,8 @@ class _ClienteTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final debt = cliente.id == null ? 0 : ref.watch(deudaClienteProvider(cliente.id!));
+    final debt =
+        cliente.id == null ? 0 : ref.watch(deudaClienteProvider(cliente.id!));
     final hasDebt = debt > 0;
     final isCredit = debt < 0;
 
@@ -152,7 +155,10 @@ class _ClienteTile extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.outline.withOpacity(0.5)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(
+              color: Colors.black.withOpacity(0.01),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
         ],
       ),
       child: Material(
@@ -170,7 +176,8 @@ class _ClienteTile extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                WarmClienteAvatar(nombre: cliente.nombre, tieneDeuda: hasDebt, radius: 26),
+                WarmClienteAvatar(
+                    nombre: cliente.nombre, tieneDeuda: hasDebt, radius: 26),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -186,9 +193,9 @@ class _ClienteTile extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        isCredit 
-                          ? 'Saldo a favor' 
-                          : (hasDebt ? 'Saldo pendiente' : 'Sin deudas'),
+                        isCredit
+                            ? 'Saldo a favor'
+                            : (hasDebt ? 'Saldo pendiente' : 'Sin deudas'),
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -206,22 +213,34 @@ class _ClienteTile extends ConsumerWidget {
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
-                        color: isCredit 
-                            ? AppColors.secondary 
-                            : (hasDebt ? AppColors.error : AppColors.textPrimary),
+                        color: isCredit
+                            ? AppColors.secondary
+                            : (hasDebt
+                                ? AppColors.error
+                                : AppColors.textPrimary),
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: (isCredit ? AppColors.secondary : (hasDebt ? AppColors.error : AppColors.textSecondary)).withOpacity(0.1),
+                        color: (isCredit
+                                ? AppColors.secondary
+                                : (hasDebt
+                                    ? AppColors.error
+                                    : AppColors.textSecondary))
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         isCredit ? 'Crédito' : (hasDebt ? 'Deuda' : 'Al día'),
                         style: GoogleFonts.outfit(
-                          color: isCredit ? AppColors.secondary : (hasDebt ? AppColors.error : AppColors.textSecondary),
+                          color: isCredit
+                              ? AppColors.secondary
+                              : (hasDebt
+                                  ? AppColors.error
+                                  : AppColors.textSecondary),
                           fontWeight: FontWeight.w800,
                           fontSize: 10,
                         ),
@@ -256,7 +275,8 @@ class _EmptyClients extends StatelessWidget {
               color: AppColors.primary.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.people_outline_rounded, size: 64, color: AppColors.primary.withOpacity(0.3)),
+            child: Icon(Icons.people_outline_rounded,
+                size: 64, color: AppColors.primary.withOpacity(0.3)),
           ),
           const SizedBox(height: 24),
           Text(
@@ -270,7 +290,9 @@ class _EmptyClients extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            query.isEmpty ? 'Empieza agregando a tus clientes habituales.' : 'Intenta buscar con otro nombre.',
+            query.isEmpty
+                ? 'Empieza agregando a tus clientes habituales.'
+                : 'Intenta buscar con otro nombre.',
             style: GoogleFonts.outfit(
               fontSize: 15,
               color: AppColors.textSecondary,

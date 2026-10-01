@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/warm_ui.dart';
 import '../../features/backup/presentation/screens/backup_screen.dart';
 import '../../features/catalogo/presentation/screens/catalogo_screen.dart';
 import '../../features/gastos/presentation/screens/viajes_list_screen.dart';
 import '../../features/pagos/presentation/screens/pagos_list_screen.dart';
 import '../../features/productos/presentation/screens/productos_list_screen.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
+import '../../features/encargos/presentation/screens/encargos_list_screen.dart';
 import '../../features/encargos/presentation/widgets/encargo_form_screen.dart';
 
 class GestionHubScreen extends ConsumerWidget {
@@ -16,99 +18,111 @@ class GestionHubScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          children: [
-            // Encabezado Premium
-            Text(
-              'Configuración',
-              style: GoogleFonts.outfit(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.5,
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            children: [
+              // Encabezado Premium
+              Text(
+                'Configuración',
+                style: GoogleFonts.outfit(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Gestión avanzada, finanzas y sistema.',
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 8),
+              Text(
+                'Gestión avanzada, finanzas y sistema.',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            const SizedBox(height: 40),
-            
-            const _SectionLabel(title: 'Ventas y Negocio'),
-            const SizedBox(height: 16),
-            _ModuleTile(
-              title: 'Venta Directa', 
-              subtitle: 'Registro rápido sin encargo',
-              icon: Icons.bolt_rounded, 
-              iconColor: AppColors.primary,
-              onTap: () => _open(context, const EncargoFormScreen(esVentaDirecta: true)),
-            ),
-            const SizedBox(height: 16),
-            _ModuleTile(
-              title: 'Catálogo', 
-              subtitle: 'Generar PDF para clientes',
-              icon: Icons.storefront_rounded, 
-              iconColor: AppColors.tertiary,
-              onTap: () => _open(context, const CatalogoScreen()),
-            ),
-            const SizedBox(height: 16),
-            _ModuleTile(
-              title: 'Productos', 
-              subtitle: 'Gestión de inventario y stock',
-              icon: Icons.inventory_2_rounded, 
-              iconColor: AppColors.primary,
-              onTap: () => _open(context, const ProductosListScreen()),
-            ),
-            
-            const SizedBox(height: 32),
-            const _SectionLabel(title: 'Finanzas y Operaciones'),
-            const SizedBox(height: 16),
-            _ModuleTile(
-              title: 'Pagos Recibidos', 
-              subtitle: 'Historial de abonos y saldos',
-              icon: Icons.account_balance_wallet_rounded, 
-              iconColor: AppColors.secondary,
-              onTap: () => _open(context, const PagosListScreen()),
-            ),
-            const SizedBox(height: 16),
-            _ModuleTile(
-              title: 'Viajes y Logística', 
-              subtitle: 'Gastos y compras en Santiago',
-              icon: Icons.local_shipping_rounded, 
-              iconColor: AppColors.tertiary,
-              onTap: () => _open(context, const ViajesListScreen()),
-            ),
-            
-            const SizedBox(height: 32),
-            const _SectionLabel(title: 'Sistema'),
-            const SizedBox(height: 16),
-            _ModuleTile(
-              title: 'Copia de Seguridad', 
-              subtitle: 'Exportar e importar datos (JSON)',
-              icon: Icons.cloud_upload_rounded, 
-              iconColor: AppColors.secondary,
-              onTap: () => _open(context, const BackupScreen()),
-            ),
-            const SizedBox(height: 16),
-            _ModuleTile(
-              title: 'Cerrar sesión', 
-              subtitle: 'Salir de la cuenta actual',
-              icon: Icons.logout_rounded, 
-              iconColor: AppColors.primary,
-              onTap: () {
-                ref.read(authStateProvider.notifier).state = AuthState.unauthenticated;
-              },
-            ),
-          ],
+              const SizedBox(height: 40),
+
+              const _SectionLabel(title: 'Ventas y Negocio'),
+              const SizedBox(height: 16),
+              _ModuleTile(
+                title: 'Venta Directa',
+                subtitle: 'Registro rápido sin encargo',
+                icon: Icons.bolt_rounded,
+                iconColor: AppColors.primary,
+                onTap: () => _open(
+                    context, const EncargoFormScreen(esVentaDirecta: true)),
+              ),
+              const SizedBox(height: 16),
+              _ModuleTile(
+                title: 'Encargos',
+                subtitle: 'Recordatorios de productos pedidos',
+                icon: Icons.assignment_rounded,
+                iconColor: AppColors.secondary,
+                onTap: () => _open(context, const EncargosListScreen()),
+              ),
+              const SizedBox(height: 16),
+              _ModuleTile(
+                title: 'Catálogo',
+                subtitle: 'Generar PDF para clientes',
+                icon: Icons.storefront_rounded,
+                iconColor: AppColors.tertiary,
+                onTap: () => _open(context, const CatalogoScreen()),
+              ),
+              const SizedBox(height: 16),
+              _ModuleTile(
+                title: 'Productos',
+                subtitle: 'Gestión de inventario y stock',
+                icon: Icons.inventory_2_rounded,
+                iconColor: AppColors.primary,
+                onTap: () => _open(context, const ProductosListScreen()),
+              ),
+
+              const SizedBox(height: 32),
+              const _SectionLabel(title: 'Finanzas y Operaciones'),
+              const SizedBox(height: 16),
+              _ModuleTile(
+                title: 'Pagos Recibidos',
+                subtitle: 'Historial de abonos y saldos',
+                icon: Icons.account_balance_wallet_rounded,
+                iconColor: AppColors.secondary,
+                onTap: () => _open(context, const PagosListScreen()),
+              ),
+              const SizedBox(height: 16),
+              _ModuleTile(
+                title: 'Viajes y Logística',
+                subtitle: 'Gastos y compras en Santiago',
+                icon: Icons.local_shipping_rounded,
+                iconColor: AppColors.tertiary,
+                onTap: () => _open(context, const ViajesListScreen()),
+              ),
+
+              const SizedBox(height: 32),
+              const _SectionLabel(title: 'Sistema'),
+              const SizedBox(height: 16),
+              _ModuleTile(
+                title: 'Copia de Seguridad',
+                subtitle: 'Exportar e importar datos (JSON)',
+                icon: Icons.cloud_upload_rounded,
+                iconColor: AppColors.secondary,
+                onTap: () => _open(context, const BackupScreen()),
+              ),
+              const SizedBox(height: 16),
+              _ModuleTile(
+                title: 'Cerrar sesión',
+                subtitle: 'Salir de la cuenta actual',
+                icon: Icons.logout_rounded,
+                iconColor: AppColors.primary,
+                onTap: () {
+                  ref.read(authStateProvider.notifier).state =
+                      AuthState.unauthenticated;
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -129,14 +143,11 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title, 
-      style: GoogleFonts.outfit(
-        fontSize: 18, 
-        fontWeight: FontWeight.w800, 
-        color: AppColors.secondary
-      )
-    );
+    return Text(title,
+        style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.secondary));
   }
 }
 
@@ -148,10 +159,10 @@ class _ModuleTile extends StatelessWidget {
   final Color iconColor;
 
   const _ModuleTile({
-    required this.title, 
+    required this.title,
     required this.subtitle,
-    required this.icon, 
-    required this.onTap, 
+    required this.icon,
+    required this.onTap,
     required this.iconColor,
   });
 
@@ -214,11 +225,9 @@ class _ModuleTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right_rounded, 
-                  color: AppColors.textSecondary.withValues(alpha: 0.3), 
-                  size: 20
-                ),
+                Icon(Icons.chevron_right_rounded,
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    size: 20),
               ],
             ),
           ),

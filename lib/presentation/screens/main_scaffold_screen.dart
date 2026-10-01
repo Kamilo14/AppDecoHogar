@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'home_dashboard_screen.dart';
 import '../../features/clientes/presentation/screens/clientes_list_screen.dart';
-import '../../features/encargos/presentation/screens/encargos_list_screen.dart';
 import '../../features/reportes/presentation/screens/reportes_screen.dart';
+import '../../features/ventas/presentation/screens/ventas_list_screen.dart';
 import 'gestion_hub_screen.dart';
 
 class MainScaffoldScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
   final List<Widget> _screens = [
     const HomeDashboardScreen(),
     const ClientesListScreen(),
-    const EncargosListScreen(),
+    const VentasListScreen(),
     const ReportesScreen(),
     const GestionHubScreen(),
   ];
@@ -59,23 +59,31 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
               label: 'Inicio',
             ),
             NavigationDestination(
-              icon: Icon(Icons.people_outline_rounded, color: AppColors.textSecondary),
-              selectedIcon: Icon(Icons.people_rounded, color: AppColors.primary),
+              icon: Icon(Icons.people_outline_rounded,
+                  color: AppColors.textSecondary),
+              selectedIcon:
+                  Icon(Icons.people_rounded, color: AppColors.primary),
               label: 'Clientes',
             ),
             NavigationDestination(
-              icon: Icon(Icons.assignment_outlined, color: AppColors.textSecondary),
-              selectedIcon: Icon(Icons.assignment_rounded, color: AppColors.primary),
-              label: 'Encargos',
+              icon: Icon(Icons.point_of_sale_outlined,
+                  color: AppColors.textSecondary),
+              selectedIcon:
+                  Icon(Icons.point_of_sale_rounded, color: AppColors.primary),
+              label: 'Ventas',
             ),
             NavigationDestination(
-              icon: Icon(Icons.bar_chart_outlined, color: AppColors.textSecondary),
-              selectedIcon: Icon(Icons.bar_chart_rounded, color: AppColors.primary),
+              icon: Icon(Icons.bar_chart_outlined,
+                  color: AppColors.textSecondary),
+              selectedIcon:
+                  Icon(Icons.bar_chart_rounded, color: AppColors.primary),
               label: 'Reportes',
             ),
             NavigationDestination(
-              icon: Icon(Icons.more_horiz_outlined, color: AppColors.textSecondary),
-              selectedIcon: Icon(Icons.more_horiz_rounded, color: AppColors.primary),
+              icon: Icon(Icons.more_horiz_outlined,
+                  color: AppColors.textSecondary),
+              selectedIcon:
+                  Icon(Icons.more_horiz_rounded, color: AppColors.primary),
               label: 'Más',
             ),
           ],

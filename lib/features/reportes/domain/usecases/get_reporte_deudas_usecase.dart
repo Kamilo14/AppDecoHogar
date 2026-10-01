@@ -17,7 +17,8 @@ class GetReporteDeudasUseCase {
     for (final cliente in clientes) {
       final ventas = encargos
           .where((encargo) => encargo.clienteId == cliente.id)
-          .where((encargo) => encargo.activo)
+          .where(
+              (encargo) => encargo.activo && encargo.tipoVenta != 'Por encargo')
           .fold(0, (sum, encargo) => sum + encargo.totalExigible);
       final recuperado = pagos
           .where((pago) => pago.clienteId == cliente.id)
