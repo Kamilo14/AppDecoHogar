@@ -96,6 +96,7 @@ class _ProductoFormDialogState extends ConsumerState<ProductoFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final categorias = ref.watch(categoriasStreamProvider).asData?.value ?? const [];
     return AlertDialog(
       title: Text(widget.productoExistente == null ? 'Nuevo producto' : 'Editar producto'),
       content: SingleChildScrollView(
@@ -122,6 +123,29 @@ class _ProductoFormDialogState extends ConsumerState<ProductoFormDialog> {
                 controller: _nombreCtrl,
                 decoration: const InputDecoration(labelText: 'Nombre *', prefixIcon: Icon(Icons.shopping_bag_outlined)),
                 validator: (v) => v!.isEmpty ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int?>(
+                value: categorias.any((categoria) => categoria.id == _categoriaId)
+                    ? _categoriaId
+                    : null,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Categoría',
+                  prefixIcon: Icon(Icons.category_outlined),
+                ),
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('Sin categoría'),
+                  ),
+                  ...categorias.map((categoria) => DropdownMenuItem<int?>(
+                        value: categoria.id,
+                        child: Text(categoria.nombre),
+                      )),
+                ],
+                onChanged: (categoriaId) =>
+                    setState(() => _categoriaId = categoriaId),
               ),
               const SizedBox(height: 12),
               Row(
