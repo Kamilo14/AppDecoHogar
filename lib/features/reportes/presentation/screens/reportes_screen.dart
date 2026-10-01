@@ -168,8 +168,8 @@ class _ReportesScreenState extends ConsumerState<ReportesScreen>
               titlesData: FlTitlesData(
                 topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                leftTitles: AxisTitles(sideTitles: SideTitles(show: true, reservedSize: 42, getTitlesWidget: (valor, _) => valor == 0 ? const SizedBox.shrink() : Text(formatCurrencyClp(valor.toInt(), compact: true), style: GoogleFonts.outfit(fontSize: 9, color: AppColors.textSecondary)))),
-                bottomTitles: AxisTitles(sideTitles: SideTitles(show: true, getTitlesWidget: (valor, _) { final i = valor.toInt(); return i >= 0 && i < etiquetas.length ? Padding(padding: const EdgeInsets.only(top: 8), child: Text(etiquetas[i], style: GoogleFonts.outfit(fontSize: 10, color: AppColors.textSecondary))) : const SizedBox.shrink(); })),
+                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 42, getTitlesWidget: (valor, _) => valor == 0 ? const SizedBox.shrink() : Text(formatCurrencyClp(valor.toInt(), compact: true), style: GoogleFonts.outfit(fontSize: 9, color: AppColors.textSecondary)))),
+                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (valor, _) { final i = valor.toInt(); return i >= 0 && i < etiquetas.length ? Padding(padding: const EdgeInsets.only(top: 8), child: Text(etiquetas[i], style: GoogleFonts.outfit(fontSize: 10, color: AppColors.textSecondary))) : const SizedBox.shrink(); })),
               ),
               barGroups: List.generate(valores.length, (i) => BarChartGroupData(x: i, barRods: [BarChartRodData(toY: valores[i].toDouble(), color: AppColors.secondary, width: 16, borderRadius: BorderRadius.circular(4))])),
             )),
