@@ -227,7 +227,18 @@ class _ClienteDetailScreenState extends ConsumerState<ClienteDetailScreen>
                                               fontWeight: FontWeight.w900,
                                               color: const Color(0xFF8A6B4F)),
                                         ),
-                                        WarmStatusChip(estado: encargo.estado),
+                                        Row(
+                                          children: [
+                                            if (encargo.tipoVenta != 'Por encargo') ...[
+                                              WarmPagoStatusChip(
+                                                  estadoPago: ref
+                                                      .watch(resumenPagoEncargoProvider(encargo))
+                                                      .estadoPago),
+                                              const SizedBox(width: 6),
+                                            ],
+                                            WarmStatusChip(estado: encargo.estado),
+                                          ],
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),

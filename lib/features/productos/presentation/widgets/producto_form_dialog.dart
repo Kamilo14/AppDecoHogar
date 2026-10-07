@@ -19,6 +19,8 @@ class ProductoFormDialog extends ConsumerStatefulWidget {
 }
 
 class _ProductoFormDialogState extends ConsumerState<ProductoFormDialog> {
+  static const _maxImageBytes = 5 * 1024 * 1024;
+  static const _maxImageDimension = 1600.0;
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nombreCtrl;
   late final TextEditingController _descripcionCtrl;
@@ -55,13 +57,30 @@ class _ProductoFormDialogState extends ConsumerState<ProductoFormDialog> {
 
   Future<void> _seleccionarFoto() async {
     final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: _maxImageDimension,
+      maxHeight: _maxImageDimension,
+      imageQuality: 80,
+    );
     
     if (image != null) {
+      final imageFile = File(image.path);
+      if (await imageFile.length() > _maxImageBytes) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('La foto debe pesar como máximo 5 MB.'),
+            ),
+          );
+        }
+        return;
+      }
       final appDir = await getApplicationDocumentsDirectory();
-      final fileName = p.basename(image.path);
+      final fileName =
+          '${DateTime.now().microsecondsSinceEpoch}_${p.basename(image.path)}';
       final savedImage = await File(image.path).copy('${appDir.path}/$fileName');
-      setState(() => _fotoPath = savedImage.path);
+      if (mounted) setState(() => _fotoPath = savedImage.path);
     }
   }
 
@@ -99,6 +118,7 @@ class _ProductoFormDialogState extends ConsumerState<ProductoFormDialog> {
     final categorias = ref.watch(categoriasStreamProvider).asData?.value ?? const [];
     return AlertDialog(
       title: Text(widget.productoExistente == null ? 'Nuevo producto' : 'Editar producto'),
+      scrollable: true,
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,

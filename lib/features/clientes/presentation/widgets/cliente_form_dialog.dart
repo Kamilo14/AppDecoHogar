@@ -78,6 +78,7 @@ class _ClienteFormDialogState extends ConsumerState<ClienteFormDialog> {
     final esNuevo = widget.clienteExistente == null;
     return AlertDialog(
       title: Text(esNuevo ? 'Nuevo Cliente' : 'Editar Cliente'),
+      scrollable: true,
       content: Form(
         key: _formKey,
         child: Column(

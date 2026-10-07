@@ -71,6 +71,7 @@ class CompraLocalDataSource {
             await database.into(database.productos).insert(
                 db.ProductosCompanion.insert(
                     nombre: entrada.nombre.trim(),
+                    cantidadDisponible: const Value(0),
                     precioCompra: Value(entrada.costoUnitario),
                     precioVenta: Value(entrada.precioVenta)));
         final compraId = await database.into(database.compras).insert(
@@ -82,15 +83,8 @@ class CompraLocalDataSource {
                 cantidad: entrada.cantidad,
                 costoUnitario: entrada.costoUnitario,
                 precioVenta: entrada.precioVenta));
-        await (database.update(database.productos)
-              ..where((p) => p.id.equals(productoId)))
-            .write(db.ProductosCompanion(
-                cantidadDisponible: Value(
-                    (producto?.cantidadDisponible ?? 0) + entrada.cantidad),
-                precioCompra: Value(entrada.costoUnitario),
-                precioVenta: Value(entrada.precioVenta),
-                comisionViaje: const Value(0),
-                viajeId: Value(viajeId)));
+        // Registrar la compra no modifica stock ni los valores del catálogo.
+        // Ambos cambios se aplican después, con confirmación explícita.
         if (entrada.encargoId != null) {
           if (entrada.detalleId == null ||
               !seleccionados.add(entrada.detalleId!) ||
@@ -134,6 +128,45 @@ class CompraLocalDataSource {
       for (final encargo in encargos.values) {
         await source.saveEncargo(encargo);
       }
+    });
+  }
+
+  Future<int> agregarAlInventario(int viajeId) async {
+    return database.transaction(() async {
+      final pendientes = await (database.select(database.compras)
+            ..where((c) =>
+                c.viajeId.equals(viajeId) &
+                c.inventarioActualizado.equals(false)))
+          .get();
+      if (pendientes.isEmpty) {
+        throw ValidationFailure(
+            'No hay compras pendientes para agregar al inventario.');
+      }
+
+      for (final compra in pendientes) {
+        final producto = await (database.select(database.productos)
+              ..where((p) => p.id.equals(compra.productoId)))
+            .getSingleOrNull();
+        if (producto == null || !producto.activo) {
+          throw ValidationFailure(
+              'El producto ${compra.nombreProducto} ya no está disponible.');
+        }
+        await (database.update(database.productos)
+              ..where((p) => p.id.equals(compra.productoId)))
+            .write(db.ProductosCompanion(
+          cantidadDisponible:
+              Value(producto.cantidadDisponible + compra.cantidad),
+          precioCompra: Value(compra.costoUnitario),
+          precioVenta: Value(compra.precioVenta),
+          comisionViaje:
+              Value((compra.gastoAsignado / compra.cantidad).round()),
+          viajeId: Value(viajeId),
+        ));
+        await (database.update(database.compras)
+              ..where((c) => c.id.equals(compra.id)))
+            .write(const db.ComprasCompanion(inventarioActualizado: Value(true)));
+      }
+      return pendientes.length;
     });
   }
 
@@ -185,7 +218,7 @@ class CompraLocalDataSource {
               ..orderBy([(t) => OrderingTerm.desc(t.id)])
               ..limit(1))
             .getSingle();
-        if (ultima.id == c.id) {
+        if (ultima.id == c.id && c.inventarioActualizado) {
           await (database.update(database.productos)
                 ..where((p) => p.id.equals(c.productoId)))
               .write(db.ProductosCompanion(

@@ -254,6 +254,35 @@ class WarmStatusChip extends StatelessWidget {
   }
 }
 
+class WarmPagoStatusChip extends StatelessWidget {
+  final String estadoPago;
+
+  const WarmPagoStatusChip({super.key, required this.estadoPago});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    String label;
+    switch (estadoPago.toUpperCase()) {
+      case 'PAGADO':
+      case 'SALDADO':
+        color = const Color(0xFF6E7E52);
+        label = 'Pagado';
+        break;
+      case 'PARCIAL':
+        color = const Color(0xFFD69E52);
+        label = 'Abono Parcial';
+        break;
+      case 'PENDIENTE':
+      default:
+        color = const Color(0xFFD67C52);
+        label = 'Sin Pago';
+        break;
+    }
+    return WarmPill(label: label, color: color);
+  }
+}
+
 class WarmClienteAvatar extends StatelessWidget {
   final String nombre;
   final double radius;

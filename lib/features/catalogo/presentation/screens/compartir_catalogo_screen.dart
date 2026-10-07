@@ -95,14 +95,25 @@ class _CompartirCatalogoScreenState extends State<CompartirCatalogoScreen> {
                                         crossAxisCount: 2,
                                         crossAxisSpacing: 12,
                                         mainAxisSpacing: 12),
-                                itemBuilder: (context, i) => Container(
-                                  decoration: BoxDecoration(
-                                      color: AppColors.surface,
-                                      borderRadius: BorderRadius.circular(8)),
-                                  child: Icon(Icons.image_outlined,
-                                      color: AppColors.textSecondary
-                                          .withValues(alpha: 0.3)),
-                                ),
+                                itemBuilder: (context, i) {
+                                  final producto = widget.productos[i];
+                                  final fotoPath = producto.fotoPath;
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: fotoPath == null || fotoPath.isEmpty
+                                        ? Container(
+                                            color: AppColors.surface,
+                                            child: Icon(Icons.image_outlined,
+                                                color: AppColors.textSecondary
+                                                    .withValues(alpha: 0.3)),
+                                          )
+                                        : fotoPath.startsWith('http')
+                                            ? Image.network(fotoPath,
+                                                fit: BoxFit.cover)
+                                            : Image.file(File(fotoPath),
+                                                fit: BoxFit.cover),
+                                  );
+                                },
                               ),
                             ],
                           ),

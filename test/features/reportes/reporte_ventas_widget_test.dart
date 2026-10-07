@@ -34,6 +34,7 @@ void main() {
                 fecha: ayer,
                 fechaEntregaReal: hoy,
                 estado: 'ENTREGADO',
+                tipoVenta: 'Venta directa',
                 detalles: const [
                   EncargoDetalle(
                       nombreTemporal: 'Bandas',
@@ -48,6 +49,7 @@ void main() {
                 fecha: ayer,
                 fechaEntregaReal: ayer,
                 estado: 'ENTREGADO',
+                tipoVenta: 'Venta directa',
                 detalles: const [
                   EncargoDetalle(
                       nombreTemporal: 'Poleas',
@@ -59,11 +61,11 @@ void main() {
           ])),
     ], child: const MaterialApp(home: Scaffold(body: ReporteVentasDetalle()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Todos'));
+    await tester.tap(find.text('Todos'), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.textContaining('Camilo'), findsOneWidget);
     expect(find.textContaining('Andrea'), findsOneWidget);
-    await tester.tap(find.text('Día'));
+    await tester.tap(find.text('Día'), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.textContaining('Camilo'), findsOneWidget);
     expect(find.textContaining('Andrea'), findsNothing);

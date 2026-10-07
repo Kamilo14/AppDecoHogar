@@ -53,6 +53,7 @@ class _ViajeFormDialogState extends ConsumerState<ViajeFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.viajeExistente == null ? 'Nuevo viaje' : 'Editar viaje'),
+      scrollable: true,
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(

@@ -2393,6 +2393,16 @@ class $ComprasTable extends Compras with TableInfo<$ComprasTable, Compra> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _inventarioActualizadoMeta =
+      const VerificationMeta('inventarioActualizado');
+  @override
+  late final GeneratedColumn<bool> inventarioActualizado =
+      GeneratedColumn<bool>('inventario_actualizado', aliasedName, false,
+          type: DriftSqlType.bool,
+          requiredDuringInsert: false,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'CHECK ("inventario_actualizado" IN (0, 1))'),
+          defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2403,7 +2413,8 @@ class $ComprasTable extends Compras with TableInfo<$ComprasTable, Compra> {
         cantidad,
         costoUnitario,
         precioVenta,
-        gastoAsignado
+        gastoAsignado,
+        inventarioActualizado
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2474,6 +2485,12 @@ class $ComprasTable extends Compras with TableInfo<$ComprasTable, Compra> {
           gastoAsignado.isAcceptableOrUnknown(
               data['gasto_asignado']!, _gastoAsignadoMeta));
     }
+    if (data.containsKey('inventario_actualizado')) {
+      context.handle(
+          _inventarioActualizadoMeta,
+          inventarioActualizado.isAcceptableOrUnknown(
+              data['inventario_actualizado']!, _inventarioActualizadoMeta));
+    }
     return context;
   }
 
@@ -2501,6 +2518,8 @@ class $ComprasTable extends Compras with TableInfo<$ComprasTable, Compra> {
           .read(DriftSqlType.int, data['${effectivePrefix}precio_venta'])!,
       gastoAsignado: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}gasto_asignado'])!,
+      inventarioActualizado: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}inventario_actualizado'])!,
     );
   }
 
@@ -2520,6 +2539,7 @@ class Compra extends DataClass implements Insertable<Compra> {
   final int costoUnitario;
   final int precioVenta;
   final int gastoAsignado;
+  final bool inventarioActualizado;
   const Compra(
       {required this.id,
       required this.viajeId,
@@ -2529,7 +2549,8 @@ class Compra extends DataClass implements Insertable<Compra> {
       required this.cantidad,
       required this.costoUnitario,
       required this.precioVenta,
-      required this.gastoAsignado});
+      required this.gastoAsignado,
+      required this.inventarioActualizado});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2542,6 +2563,7 @@ class Compra extends DataClass implements Insertable<Compra> {
     map['costo_unitario'] = Variable<int>(costoUnitario);
     map['precio_venta'] = Variable<int>(precioVenta);
     map['gasto_asignado'] = Variable<int>(gastoAsignado);
+    map['inventario_actualizado'] = Variable<bool>(inventarioActualizado);
     return map;
   }
 
@@ -2556,6 +2578,7 @@ class Compra extends DataClass implements Insertable<Compra> {
       costoUnitario: Value(costoUnitario),
       precioVenta: Value(precioVenta),
       gastoAsignado: Value(gastoAsignado),
+      inventarioActualizado: Value(inventarioActualizado),
     );
   }
 
@@ -2572,6 +2595,8 @@ class Compra extends DataClass implements Insertable<Compra> {
       costoUnitario: serializer.fromJson<int>(json['costoUnitario']),
       precioVenta: serializer.fromJson<int>(json['precioVenta']),
       gastoAsignado: serializer.fromJson<int>(json['gastoAsignado']),
+      inventarioActualizado:
+          serializer.fromJson<bool>(json['inventarioActualizado']),
     );
   }
   @override
@@ -2587,6 +2612,7 @@ class Compra extends DataClass implements Insertable<Compra> {
       'costoUnitario': serializer.toJson<int>(costoUnitario),
       'precioVenta': serializer.toJson<int>(precioVenta),
       'gastoAsignado': serializer.toJson<int>(gastoAsignado),
+      'inventarioActualizado': serializer.toJson<bool>(inventarioActualizado),
     };
   }
 
@@ -2599,7 +2625,8 @@ class Compra extends DataClass implements Insertable<Compra> {
           int? cantidad,
           int? costoUnitario,
           int? precioVenta,
-          int? gastoAsignado}) =>
+          int? gastoAsignado,
+          bool? inventarioActualizado}) =>
       Compra(
         id: id ?? this.id,
         viajeId: viajeId ?? this.viajeId,
@@ -2610,6 +2637,8 @@ class Compra extends DataClass implements Insertable<Compra> {
         costoUnitario: costoUnitario ?? this.costoUnitario,
         precioVenta: precioVenta ?? this.precioVenta,
         gastoAsignado: gastoAsignado ?? this.gastoAsignado,
+        inventarioActualizado:
+            inventarioActualizado ?? this.inventarioActualizado,
       );
   Compra copyWithCompanion(ComprasCompanion data) {
     return Compra(
@@ -2630,6 +2659,9 @@ class Compra extends DataClass implements Insertable<Compra> {
       gastoAsignado: data.gastoAsignado.present
           ? data.gastoAsignado.value
           : this.gastoAsignado,
+      inventarioActualizado: data.inventarioActualizado.present
+          ? data.inventarioActualizado.value
+          : this.inventarioActualizado,
     );
   }
 
@@ -2644,14 +2676,24 @@ class Compra extends DataClass implements Insertable<Compra> {
           ..write('cantidad: $cantidad, ')
           ..write('costoUnitario: $costoUnitario, ')
           ..write('precioVenta: $precioVenta, ')
-          ..write('gastoAsignado: $gastoAsignado')
+          ..write('gastoAsignado: $gastoAsignado, ')
+          ..write('inventarioActualizado: $inventarioActualizado')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, viajeId, productoId, nombreProducto,
-      fecha, cantidad, costoUnitario, precioVenta, gastoAsignado);
+  int get hashCode => Object.hash(
+      id,
+      viajeId,
+      productoId,
+      nombreProducto,
+      fecha,
+      cantidad,
+      costoUnitario,
+      precioVenta,
+      gastoAsignado,
+      inventarioActualizado);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2664,7 +2706,8 @@ class Compra extends DataClass implements Insertable<Compra> {
           other.cantidad == this.cantidad &&
           other.costoUnitario == this.costoUnitario &&
           other.precioVenta == this.precioVenta &&
-          other.gastoAsignado == this.gastoAsignado);
+          other.gastoAsignado == this.gastoAsignado &&
+          other.inventarioActualizado == this.inventarioActualizado);
 }
 
 class ComprasCompanion extends UpdateCompanion<Compra> {
@@ -2677,6 +2720,7 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
   final Value<int> costoUnitario;
   final Value<int> precioVenta;
   final Value<int> gastoAsignado;
+  final Value<bool> inventarioActualizado;
   const ComprasCompanion({
     this.id = const Value.absent(),
     this.viajeId = const Value.absent(),
@@ -2687,6 +2731,7 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
     this.costoUnitario = const Value.absent(),
     this.precioVenta = const Value.absent(),
     this.gastoAsignado = const Value.absent(),
+    this.inventarioActualizado = const Value.absent(),
   });
   ComprasCompanion.insert({
     this.id = const Value.absent(),
@@ -2698,6 +2743,7 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
     required int costoUnitario,
     required int precioVenta,
     this.gastoAsignado = const Value.absent(),
+    this.inventarioActualizado = const Value.absent(),
   })  : viajeId = Value(viajeId),
         productoId = Value(productoId),
         nombreProducto = Value(nombreProducto),
@@ -2715,6 +2761,7 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
     Expression<int>? costoUnitario,
     Expression<int>? precioVenta,
     Expression<int>? gastoAsignado,
+    Expression<bool>? inventarioActualizado,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2726,6 +2773,8 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
       if (costoUnitario != null) 'costo_unitario': costoUnitario,
       if (precioVenta != null) 'precio_venta': precioVenta,
       if (gastoAsignado != null) 'gasto_asignado': gastoAsignado,
+      if (inventarioActualizado != null)
+        'inventario_actualizado': inventarioActualizado,
     });
   }
 
@@ -2738,7 +2787,8 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
       Value<int>? cantidad,
       Value<int>? costoUnitario,
       Value<int>? precioVenta,
-      Value<int>? gastoAsignado}) {
+      Value<int>? gastoAsignado,
+      Value<bool>? inventarioActualizado}) {
     return ComprasCompanion(
       id: id ?? this.id,
       viajeId: viajeId ?? this.viajeId,
@@ -2749,6 +2799,8 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
       costoUnitario: costoUnitario ?? this.costoUnitario,
       precioVenta: precioVenta ?? this.precioVenta,
       gastoAsignado: gastoAsignado ?? this.gastoAsignado,
+      inventarioActualizado:
+          inventarioActualizado ?? this.inventarioActualizado,
     );
   }
 
@@ -2782,6 +2834,10 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
     if (gastoAsignado.present) {
       map['gasto_asignado'] = Variable<int>(gastoAsignado.value);
     }
+    if (inventarioActualizado.present) {
+      map['inventario_actualizado'] =
+          Variable<bool>(inventarioActualizado.value);
+    }
     return map;
   }
 
@@ -2796,7 +2852,8 @@ class ComprasCompanion extends UpdateCompanion<Compra> {
           ..write('cantidad: $cantidad, ')
           ..write('costoUnitario: $costoUnitario, ')
           ..write('precioVenta: $precioVenta, ')
-          ..write('gastoAsignado: $gastoAsignado')
+          ..write('gastoAsignado: $gastoAsignado, ')
+          ..write('inventarioActualizado: $inventarioActualizado')
           ..write(')'))
         .toString();
   }
@@ -6365,6 +6422,7 @@ typedef $$ComprasTableCreateCompanionBuilder = ComprasCompanion Function({
   required int costoUnitario,
   required int precioVenta,
   Value<int> gastoAsignado,
+  Value<bool> inventarioActualizado,
 });
 typedef $$ComprasTableUpdateCompanionBuilder = ComprasCompanion Function({
   Value<int> id,
@@ -6376,6 +6434,7 @@ typedef $$ComprasTableUpdateCompanionBuilder = ComprasCompanion Function({
   Value<int> costoUnitario,
   Value<int> precioVenta,
   Value<int> gastoAsignado,
+  Value<bool> inventarioActualizado,
 });
 
 final class $$ComprasTableReferences
@@ -6455,6 +6514,10 @@ class $$ComprasTableFilterComposer
 
   ColumnFilters<int> get gastoAsignado => $composableBuilder(
       column: $table.gastoAsignado, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get inventarioActualizado => $composableBuilder(
+      column: $table.inventarioActualizado,
+      builder: (column) => ColumnFilters(column));
 
   $$ViajesTableFilterComposer get viajeId {
     final $$ViajesTableFilterComposer composer = $composerBuilder(
@@ -6551,6 +6614,10 @@ class $$ComprasTableOrderingComposer
       column: $table.gastoAsignado,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get inventarioActualizado => $composableBuilder(
+      column: $table.inventarioActualizado,
+      builder: (column) => ColumnOrderings(column));
+
   $$ViajesTableOrderingComposer get viajeId {
     final $$ViajesTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -6621,6 +6688,9 @@ class $$ComprasTableAnnotationComposer
 
   GeneratedColumn<int> get gastoAsignado => $composableBuilder(
       column: $table.gastoAsignado, builder: (column) => column);
+
+  GeneratedColumn<bool> get inventarioActualizado => $composableBuilder(
+      column: $table.inventarioActualizado, builder: (column) => column);
 
   $$ViajesTableAnnotationComposer get viajeId {
     final $$ViajesTableAnnotationComposer composer = $composerBuilder(
@@ -6717,6 +6787,7 @@ class $$ComprasTableTableManager extends RootTableManager<
             Value<int> costoUnitario = const Value.absent(),
             Value<int> precioVenta = const Value.absent(),
             Value<int> gastoAsignado = const Value.absent(),
+            Value<bool> inventarioActualizado = const Value.absent(),
           }) =>
               ComprasCompanion(
             id: id,
@@ -6728,6 +6799,7 @@ class $$ComprasTableTableManager extends RootTableManager<
             costoUnitario: costoUnitario,
             precioVenta: precioVenta,
             gastoAsignado: gastoAsignado,
+            inventarioActualizado: inventarioActualizado,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6739,6 +6811,7 @@ class $$ComprasTableTableManager extends RootTableManager<
             required int costoUnitario,
             required int precioVenta,
             Value<int> gastoAsignado = const Value.absent(),
+            Value<bool> inventarioActualizado = const Value.absent(),
           }) =>
               ComprasCompanion.insert(
             id: id,
@@ -6750,6 +6823,7 @@ class $$ComprasTableTableManager extends RootTableManager<
             costoUnitario: costoUnitario,
             precioVenta: precioVenta,
             gastoAsignado: gastoAsignado,
+            inventarioActualizado: inventarioActualizado,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) =>

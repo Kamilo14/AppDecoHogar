@@ -38,6 +38,67 @@ class _ViajeDetailState extends ConsumerState<ViajeDetailScreen> {
     }
   }
 
+  Future<void> _confirmarInventario(int comprasPendientes) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Agregar al inventario'),
+        content: Text(
+          '¿Deseas sumar $comprasPendientes compra(s) al inventario? Esta acción actualizará el stock disponible.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Agregar al inventario')),
+        ],
+      ),
+    );
+    if (confirmar != true || !mounted) return;
+
+    setState(() => guardando = true);
+    try {
+      final agregadas = await ref
+          .read(compraDataSourceProvider)
+          .agregarAlInventario(widget.viajeId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('$agregadas compra(s) agregada(s) al inventario.'),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => guardando = false);
+    }
+  }
+
+  Future<void> _confirmarReparto(int cantidad) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Distribuir gastos'),
+        content: Text(
+          '¿Deseas repartir ${formatCurrencyClp(cantidad)} entre las compras de este viaje? Esto actualizará automáticamente el costo y el precio sugerido de los productos cuando estén agregados al inventario.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Distribuir gastos')),
+        ],
+      ),
+    );
+    if (confirmar == true && mounted) await aplicar(cantidad);
+  }
+
   @override
   Widget build(BuildContext context) {
     final comprasAsync = ref.watch(comprasStreamProvider);
@@ -69,6 +130,8 @@ class _ViajeDetailState extends ConsumerState<ViajeDetailScreen> {
                         s +
                         (c.costoUnitario > 0 ? c.costoUnitario : 1) *
                             c.cantidad);
+                final comprasPendientesInventario =
+                    compras.where((c) => !c.inventarioActualizado).length;
                 return ListView(padding: const EdgeInsets.all(20), children: [
                   Text(viaje.destino,
                       style: Theme.of(context).textTheme.headlineSmall),
@@ -117,9 +180,14 @@ class _ViajeDetailState extends ConsumerState<ViajeDetailScreen> {
                       'Egresos separados guardados', viaje.gastoSinDistribuir),
                   FilledButton(
                       onPressed:
-                          guardando ? null : () => aplicar(simulado.round()),
-                      child:
-                          Text(guardando ? 'Guardando…' : 'Guardar reparto')),
+                          guardando || compras.isEmpty
+                              ? null
+                              : () => _confirmarReparto(simulado.round()),
+                      child: Text(guardando
+                          ? 'Guardando…'
+                          : viaje.distribuido
+                              ? 'Actualizar reparto de gastos'
+                              : 'Distribuir gastos')),
                   const Divider(height: 32),
                   Row(children: [
                     const Expanded(
@@ -153,16 +221,24 @@ class _ViajeDetailState extends ConsumerState<ViajeDetailScreen> {
                                 base)
                             .round();
                     return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
                         child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(c.nombreProducto,
                                       style: const TextStyle(
-                                          fontWeight: FontWeight.bold)),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 17)),
+                                  const SizedBox(height: 6),
                                   Text(
                                       'Compra #${c.id} · ${formatDateCl(c.fecha)} · ${c.cantidad} unidades'),
+                                  const Divider(height: 28),
+                                  const Text('Costos y precio estimado',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  const SizedBox(height: 6),
                                   _total('Costo unitario', c.costoUnitario),
                                   _total('Inversión de compra',
                                       c.costoUnitario * c.cantidad),
@@ -172,19 +248,67 @@ class _ViajeDetailState extends ConsumerState<ViajeDetailScreen> {
                                       c.costoUnitario + comision),
                                   _total('Precio sugerido con reparto',
                                       c.precioVenta + comision),
+                                  const Divider(height: 28),
+                                  Text(
+                                    c.inventarioActualizado
+                                        ? 'Inventario: agregado al stock'
+                                        : 'Inventario: pendiente de agregar',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: c.inventarioActualizado
+                                          ? Colors.green.shade700
+                                          : Colors.orange.shade800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
                                   if (asociados.isEmpty)
                                     const Text(
                                         'Destino: inventario disponible'),
                                   ...asociados.map((s) => Text(s)),
-                                ])));
+                                 ])));
                   }),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Actualizar inventario',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16)),
+                          const SizedBox(height: 8),
+                          Text(
+                            compras.isEmpty
+                                ? 'Primero registra las compras realizadas en este viaje.'
+                                : comprasPendientesInventario == 0
+                                    ? 'Todas las compras de este viaje ya están disponibles en el inventario.'
+                                    : '$comprasPendientesInventario compra(s) están listas para sumarse al stock.',
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: guardando || comprasPendientesInventario == 0
+                                ? null
+                                : () => _confirmarInventario(
+                                    comprasPendientesInventario),
+                            icon: Icon(comprasPendientesInventario == 0
+                                ? Icons.check_circle_outline
+                                : Icons.inventory_2_outlined),
+                            label: Text(comprasPendientesInventario == 0
+                                ? 'Inventario actualizado'
+                                : 'Agregar productos al inventario'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ]);
               })),
     );
   }
 
   Widget _total(String label, int monto) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(children: [
         Expanded(child: Text(label)),
         Text(formatCurrencyClp(monto),

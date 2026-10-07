@@ -77,11 +77,15 @@ void main() {
     ]);
     final comprado = (await encargos.getEncargoById(id))!;
     final producto = (await database.select(database.productos).get()).single;
-    expect(producto.cantidadDisponible, 15);
+    expect(producto.cantidadDisponible, 0);
+    await compras.agregarAlInventario(viajeId);
+    final productoEnInventario =
+        (await database.select(database.productos).get()).single;
+    expect(productoEnInventario.cantidadDisponible, 15);
     expect(comprado.detalles.single.compraId, isNotNull);
     expect(comprado.total, 25000);
-    expect(producto.cantidadDisponible - comprado.detalles.single.cantidad, 5);
-    await expectLater(encargos.saveEncargo(venta(producto.id, 6)),
+    expect(productoEnInventario.cantidadDisponible - comprado.detalles.single.cantidad, 5);
+    await expectLater(encargos.saveEncargo(venta(productoEnInventario.id, 6)),
         throwsA(isA<ValidationFailure>()));
     await encargos.saveEncargo(comprado.copyWith(estado: 'ENTREGADO'),
         liquidarSaldo: true);
@@ -107,6 +111,9 @@ void main() {
             fecha: DateTime(2026, 10, 10), destino: 'Santiago'));
     await compras.registrar(
         segundo, [entrada(productoId: bandas.id, cantidad: 4, costo: 2000)]);
+    expect(bandas.cantidadDisponible, 0);
+    await compras.agregarAlInventario(viajeId);
+    await compras.agregarAlInventario(segundo);
     expect((await database.select(database.productos).get()).length, 2);
     final comprasGuardadas = await database.select(database.compras).get();
     expect(comprasGuardadas.where((c) => c.viajeId == viajeId).length, 2);
@@ -134,6 +141,7 @@ void main() {
       () async {
     await compras.registrar(viajeId,
         [entrada(cantidad: 3), entrada(nombre: 'Poleas', cantidad: 2)]);
+    await compras.agregarAlInventario(viajeId);
     await viajes
         .addGasto(Gasto(viajeId: viajeId, tipo: 'Pasajes', monto: 1001));
     await viajes.addGasto(Gasto(viajeId: viajeId, tipo: 'Comida', monto: 999));
@@ -229,6 +237,7 @@ void main() {
           detalleId: pendiente.detalles.single.id,
           cantidadCliente: 1)
     ]);
+    await compras.agregarAlInventario(viajeId);
     await viajes.addGasto(Gasto(viajeId: viajeId, tipo: 'Redondeo', monto: 1));
     await compras.distribuir(viajeId, 1);
     final producto = (await database.select(database.productos).get()).single;

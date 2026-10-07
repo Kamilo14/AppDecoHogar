@@ -295,6 +295,90 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
     }
   }
 
+  Widget _buildPagoSection({required int abonado, required int saldo}) {
+    if (!_esVentaDirecta) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Pago',
+              style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w800, fontSize: 14)),
+          const SizedBox(height: 10),
+          if (_clienteId == null) ...[
+            const Text(
+              'Venta sin cliente: se registra la venta, pero no queda deuda pendiente ni abonos asociados.',
+            ),
+          ] else ...[
+            Text('Abonos registrados: ${formatCurrencyClp(abonado)}'),
+            Text('Saldo a pagar: ${formatCurrencyClp(saldo)}'),
+            ...const {
+              'PAGO_TOTAL': 'Pagó todo (saldo restante)',
+              'ABONO': 'Abono nuevo',
+              'SIN_PAGO': 'Sin pago nuevo'
+            }.entries.map((opcion) => CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(opcion.value),
+                  value: _opcionPago == opcion.key,
+                  onChanged: (_) =>
+                      setState(() => _opcionPago = opcion.key),
+                )),
+            if (_opcionPago == 'ABONO') ...[
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _montoAbonoCtrl,
+                decoration: const InputDecoration(
+                  labelText: r'Monto que abonó ($)',
+                  prefixText: r'$ ',
+                  filled: true,
+                  fillColor: AppColors.background,
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+            if (_opcionPago != 'SIN_PAGO') ...[
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: _metodoPago,
+                decoration: const InputDecoration(
+                    labelText: 'Método de Pago',
+                    filled: true,
+                    fillColor: AppColors.background),
+                items: const [
+                  DropdownMenuItem(value: 'Efectivo', child: Text('Efectivo')),
+                  DropdownMenuItem(
+                      value: 'Transferencia', child: Text('Transferencia')),
+                  DropdownMenuItem(
+                      value: 'Débito/Crédito', child: Text('Débito/Crédito')),
+                  DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+                ],
+                onChanged: (v) => setState(() => _metodoPago = v!),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetalleSection() => TextFormField(
+        controller: _observacionesCtrl,
+        decoration: const InputDecoration(
+          labelText: 'Detalle / notas',
+          prefixIcon: Icon(Icons.notes_rounded),
+          filled: true,
+          fillColor: AppColors.surface,
+        ),
+        maxLines: 2,
+      );
+
   @override
   Widget build(BuildContext context) {
     final clientes = ref.watch(clientesStreamProvider).asData?.value ?? [];
@@ -313,20 +397,11 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
             : 'Editar Encargo');
 
     int totalVenta = 0;
-    int totalCosto = 0;
-    int inversionCompra = 0;
     for (final item in _detalles) {
       final c = int.tryParse(item.cantidadCtrl.text) ?? 0;
       final p = int.tryParse(item.precioCtrl.text) ?? 0;
-      final co = int.tryParse(item.costoCtrl.text) ?? 0;
       totalVenta += c * p;
-      totalCosto += c * co;
-      final compradas = item.todasParaCliente || _esVentaDirecta
-          ? c
-          : int.tryParse(item.cantidadCompradaCtrl.text) ?? 0;
-      inversionCompra += compradas * co;
     }
-    final int ganancia = totalVenta - totalCosto;
     final otrosEncargos = ref.watch(encargosStreamProvider).asData?.value ?? [];
     final deudaCliente = otrosEncargos
             .where((e) =>
@@ -415,93 +490,6 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                 ),
                 const SizedBox(height: 16),
               ],
-              if (_esVentaDirecta) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.outline),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Registro de Pago / Cobro',
-                          style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.w800, fontSize: 14)),
-                      const SizedBox(height: 10),
-                      if (_clienteId == null) ...[
-                        const Text(
-                          'Venta sin cliente: se registra la venta, pero no queda deuda pendiente ni abonos asociados.',
-                        ),
-                      ] else ...[
-                        Text(
-                            'Abonos registrados: ${formatCurrencyClp(abonado)}'),
-                        Text('Saldo a pagar: ${formatCurrencyClp(saldo)}'),
-                        ...const {
-                          'PAGO_TOTAL': 'Pagó todo (saldo restante)',
-                          'ABONO': 'Abono nuevo',
-                          'SIN_PAGO': 'Sin pago nuevo'
-                        }.entries.map((opcion) => CheckboxListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(opcion.value),
-                              value: _opcionPago == opcion.key,
-                              onChanged: (_) =>
-                                  setState(() => _opcionPago = opcion.key),
-                            )),
-                        if (_opcionPago == 'ABONO') ...[
-                          const SizedBox(height: 10),
-                          TextFormField(
-                            controller: _montoAbonoCtrl,
-                            decoration: const InputDecoration(
-                              labelText: r'Monto que abonó ($)',
-                              prefixText: r'$ ',
-                              filled: true,
-                              fillColor: AppColors.background,
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ],
-                        if (_opcionPago != 'SIN_PAGO') ...[
-                          const SizedBox(height: 10),
-                          DropdownButtonFormField<String>(
-                            value: _metodoPago,
-                            decoration: const InputDecoration(
-                                labelText: 'Método de Pago',
-                                filled: true,
-                                fillColor: AppColors.background),
-                            items: const [
-                              DropdownMenuItem(
-                                  value: 'Efectivo', child: Text('Efectivo')),
-                              DropdownMenuItem(
-                                  value: 'Transferencia',
-                                  child: Text('Transferencia')),
-                              DropdownMenuItem(
-                                  value: 'Débito/Crédito',
-                                  child: Text('Débito/Crédito')),
-                              DropdownMenuItem(
-                                  value: 'Otro', child: Text('Otro')),
-                            ],
-                            onChanged: (v) => setState(() => _metodoPago = v!),
-                          ),
-                        ],
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              TextFormField(
-                controller: _observacionesCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Notas',
-                  prefixIcon: Icon(Icons.notes_rounded),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -564,7 +552,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                 return Container(
                   key: ObjectKey(input),
                   margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(24),
@@ -574,6 +562,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                   child: Column(
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             flex: 3,
@@ -584,16 +573,21 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                                     children: [
                                       Text(input.searchCtrl.text,
                                           style: const TextStyle(
-                                              fontWeight: FontWeight.bold)),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          )),
                                       if (stockDisponible != null)
-                                        Text(
-                                          '$stockDisponible disponibles',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                  color:
-                                                      AppColors.textSecondary),
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 6),
+                                          child: Text(
+                                            '$stockDisponible disponibles',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(
+                                                  color: AppColors.textSecondary,
+                                                ),
+                                          ),
                                         ),
                                     ],
                                   )
@@ -661,7 +655,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                                         ? 'Mín. 1'
                                         : null,
                                 decoration: const InputDecoration(
-                                    labelText: 'Cant.',
+                                    labelText: 'Cantidad',
                                     filled: true,
                                     fillColor: AppColors.background),
                                 keyboardType: TextInputType.number,
@@ -687,7 +681,8 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                             input.agregarAProductos = value ?? false;
                           }),
                         ),
-                      if (_esVentaDirecta)
+                      if (_esVentaDirecta) ...[
+                        const SizedBox(height: 16),
                         Row(
                           children: [
                             if (!_esVentaDirecta) ...[
@@ -727,6 +722,7 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                             ),
                           ],
                         ),
+                      ],
                     ],
                   ),
                 );
@@ -756,37 +752,15 @@ class _EncargoFormScreenState extends ConsumerState<EncargoFormScreen> {
                                 color: AppColors.textPrimary)),
                       ],
                     ),
-                    if (_esVentaDirecta) ...[
-                      const Divider(height: 24),
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('Inversión de compra:'),
-                            Text(formatCurrencyClp(inversionCompra)),
-                          ]),
-                      if (inversionCompra != totalCosto)
-                        Text(
-                            'Costo para este cliente: ${formatCurrencyClp(totalCosto)}. La diferencia queda invertida en stock.'),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Ganancia Estimada:',
-                              style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary)),
-                          Text(formatCurrencyClp(ganancia),
-                              style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 18,
-                                  color: ganancia >= 0
-                                      ? AppColors.secondary
-                                      : AppColors.error)),
-                        ],
-                      ),
-                    ],
                   ],
                 ),
               ),
+              if (_esVentaDirecta) ...[
+                const SizedBox(height: 16),
+                _buildPagoSection(abonado: abonado, saldo: saldo),
+              ],
+              const SizedBox(height: 16),
+              _buildDetalleSection(),
               const SizedBox(height: 32),
               FilledButton(
                 style: FilledButton.styleFrom(

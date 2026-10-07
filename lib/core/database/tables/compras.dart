@@ -12,4 +12,7 @@ class Compras extends Table {
   IntColumn get costoUnitario => integer()();
   IntColumn get precioVenta => integer()();
   IntColumn get gastoAsignado => integer().withDefault(const Constant(0))();
+  // La compra se registra primero y solo impacta el stock tras confirmación.
+  BoolColumn get inventarioActualizado =>
+      boolean().withDefault(const Constant(false))();
 }

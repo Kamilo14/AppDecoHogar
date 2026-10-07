@@ -41,6 +41,7 @@ class _GastoFormDialogState extends ConsumerState<GastoFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Nuevo gasto'),
+      scrollable: true,
       content: Form(
         key: _formKey,
         child: Column(

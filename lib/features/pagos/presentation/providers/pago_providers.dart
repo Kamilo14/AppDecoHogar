@@ -1,12 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/core_providers.dart';
+import '../../../encargos/domain/entities/encargo_entity.dart';
 import '../../../encargos/presentation/providers/encargo_providers.dart';
 import '../../data/datasources/pago_local_datasource.dart';
 import '../../data/repositories/pago_repository_impl.dart';
 import '../../domain/entities/pago_entity.dart';
 import '../../domain/repositories/pago_repository.dart';
 import '../../domain/usecases/calcular_deuda_cliente_usecase.dart';
+import '../../domain/usecases/calcular_pago_encargo_usecase.dart';
 import '../../domain/usecases/editar_pago_usecase.dart';
 import '../../domain/usecases/eliminar_pago_usecase.dart';
 import '../../domain/usecases/get_pagos_cliente_usecase.dart';
@@ -52,4 +54,18 @@ final deudaClienteProvider = Provider.family<int, int>((ref, clienteId) {
   final encargos = ref.watch(encargosStreamProvider).asData?.value ?? const [];
   final pagos = ref.watch(pagosStreamProvider).asData?.value ?? const [];
   return ref.watch(calcularDeudaClienteUseCaseProvider).call(encargos, pagos, clienteId);
+});
+
+final calcularPagoEncargoUseCaseProvider = Provider<CalcularPagoEncargoUseCase>((ref) {
+  return CalcularPagoEncargoUseCase();
+});
+
+final resumenPagoEncargoProvider = Provider.family<EncargoPagoResumen, Encargo>((ref, encargo) {
+  final encargos = ref.watch(encargosStreamProvider).asData?.value ?? const [];
+  final pagos = ref.watch(pagosStreamProvider).asData?.value ?? const [];
+  return ref.watch(calcularPagoEncargoUseCaseProvider).call(
+        encargo: encargo,
+        todosEncargos: encargos,
+        todosPagos: pagos,
+      );
 });

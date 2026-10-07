@@ -69,17 +69,14 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen>
       orElse: () => Cliente(nombre: 'Cliente', fechaRegistro: DateTime(2000)),
     );
 
-    // Los pagos se relacionan por ID, independientemente de su descripción.
+    final pagoResumen = ref.watch(resumenPagoEncargoProvider(_currentEncargo));
     final List<Pago> pagosEncargo = esVenta
-        ? pagos.where((p) => p.encargoId == _currentEncargo.id).toList()
+        ? (pagoResumen.montoAbonado > 0
+            ? pagos.where((p) => p.clienteId == _currentEncargo.clienteId || p.encargoId == _currentEncargo.id).toList()
+            : const <Pago>[])
         : const <Pago>[];
-    final totalAbonado = pagosEncargo.fold(0, (sum, p) => sum + p.monto);
-    final deudaGlobal = _currentEncargo.clienteId == null
-        ? 0
-        : ref.watch(deudaClienteProvider(_currentEncargo.clienteId!));
-    final saldoPendiente = (_currentEncargo.totalExigible - totalAbonado)
-        .clamp(0, deudaGlobal < 0 ? 0 : deudaGlobal)
-        .toInt();
+    final totalAbonado = pagoResumen.montoAbonado;
+    final saldoPendiente = pagoResumen.saldoPendiente;
 
     return AppBackground(
       child: Scaffold(
@@ -130,7 +127,16 @@ class _EncargoDetailScreenState extends ConsumerState<EncargoDetailScreen>
                       ],
                     ),
                   ),
-                  WarmStatusChip(estado: _currentEncargo.estado),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      WarmStatusChip(estado: _currentEncargo.estado),
+                      if (esVenta) ...[
+                        const SizedBox(height: 4),
+                        WarmPagoStatusChip(estadoPago: pagoResumen.estadoPago),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),

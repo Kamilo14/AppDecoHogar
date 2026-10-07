@@ -124,7 +124,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                         Row(
                           children: [
                             Text(
-                              '¡Hola, ${u?.primerNombre ?? ""}!',
+                              '¡Hola, ${u?.nombre ?? ""}!',
                               style: GoogleFonts.outfit(
                                   fontSize: 30,
                                   fontWeight: FontWeight.w800,

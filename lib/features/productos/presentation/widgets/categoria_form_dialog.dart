@@ -61,6 +61,7 @@ class _CategoriaFormDialogState extends ConsumerState<CategoriaFormDialog> {
     final esNuevo = widget.categoriaExistente == null;
     return AlertDialog(
       title: Text(esNuevo ? 'Nueva categoría' : 'Editar categoría'),
+      scrollable: true,
       content: Form(
         key: _formKey,
         child: TextFormField(

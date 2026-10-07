@@ -38,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.at(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration {
@@ -75,6 +75,13 @@ class AppDatabase extends _$AppDatabase {
                 'UPDATE encargo_detalle SET costo_logistica = cantidad * COALESCE((SELECT comision_viaje FROM productos WHERE productos.id = encargo_detalle.producto_id), 0)');
             await customStatement(
                 'UPDATE viajes SET monto_distribuido = COALESCE((SELECT SUM(monto) FROM gastos WHERE gastos.viaje_id = viajes.id), 0) WHERE distribuido = 1');
+          }
+          // Desde v10, createTable(compras) ya crea la columna actual.
+          if (from >= 11 && from < 12) {
+            await m.addColumn(compras, compras.inventarioActualizado);
+            // Las compras previas ya habían modificado existencias al crearse.
+            await customStatement(
+                'UPDATE compras SET inventario_actualizado = 1');
           }
         }
       },

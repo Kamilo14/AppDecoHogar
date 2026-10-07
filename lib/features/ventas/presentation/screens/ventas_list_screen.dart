@@ -12,6 +12,7 @@ import '../../../encargos/domain/entities/encargo_entity.dart';
 import '../../../encargos/presentation/providers/encargo_providers.dart';
 import '../../../encargos/presentation/screens/encargo_detail_screen.dart';
 import '../../../encargos/presentation/widgets/encargo_form_screen.dart';
+import '../../../pagos/presentation/providers/pago_providers.dart';
 
 class VentasListScreen extends ConsumerStatefulWidget {
   const VentasListScreen({super.key});
@@ -245,14 +246,16 @@ class _DateSelector extends StatelessWidget {
   }
 }
 
-class _VentaCard extends StatelessWidget {
+class _VentaCard extends ConsumerWidget {
   final Encargo venta;
   final Cliente cliente;
 
   const _VentaCard({required this.venta, required this.cliente});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pagoResumen = ref.watch(resumenPagoEncargoProvider(venta));
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: WarmSurfaceCard(
@@ -298,12 +301,19 @@ class _VentaCard extends StatelessWidget {
                 ],
               ),
             ),
-            Text(
-              formatCurrencyClp(venta.total),
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.w900,
-                color: AppColors.textPrimary,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  formatCurrencyClp(venta.total),
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                WarmPagoStatusChip(estadoPago: pagoResumen.estadoPago),
+              ],
             ),
           ],
         ),
